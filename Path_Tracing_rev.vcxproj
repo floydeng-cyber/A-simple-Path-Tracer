@@ -154,7 +154,7 @@
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="PathTracingIntegrator.hpp" />
     <ClInclude Include="RenderSettings.hpp" />
-    <ClInclude Include="SingletLens.h" />
+    <ClInclude Include="Sampler.hpp" />
     <ClInclude Include="Object.hpp" />
     <ClInclude Include="OBJ_Loader.hpp" />
     <ClInclude Include="Ray.hpp" />
@@ -171,7 +171,6 @@
     <ClCompile Include="PathTracingIntegrator.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="Vector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

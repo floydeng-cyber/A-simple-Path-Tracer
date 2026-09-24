@@ -9,6 +9,7 @@ public:
 	Vector3f radiance(
 		const Ray& ray,
 		const Scene& scene,
+		Sampler& sampler,
 		int depth
 	) const override;
 

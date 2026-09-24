@@ -1,7 +1,9 @@
 ﻿#include <fstream>
+#include <thread>
+
 #include "Scene.hpp"
 #include "Renderer.hpp"
-#include <thread>
+#include "Sampler.hpp"
 
 //inline float deg2rad(const float& deg) { return deg * M_PI/180; }
 
@@ -38,14 +40,21 @@ void Renderer::Render(const Scene& scene,
                 int frame_idx = j * setting.width + i;  // index of current frame
                 float spp_inv = 1.f / spp;              // inverse of SPP
                 for (int k = 0; k < spp; ++k) {     // loop through SPP
-                    float dx = get_random_float(), dy = get_random_float(); // random sampling range
-                    // generate primary ray direction
-                    const float norX = (static_cast<float>(i) + dx) /
+                    Sampler sampler(Sampler::makeSeed(
+                        setting.randSeed,
+                        static_cast<std::uint64_t>(frame_idx),
+                        static_cast<std::uint64_t>(k)
+                    ));     // make unique seed for current frame, sample
+
+                    // generate sampling ray direction
+                    const Vector2f deviate = sampler.rand2D();
+                    const float norX = (static_cast<float>(i) + deviate.x) /
                                         static_cast<float>(setting.width);
-                    const float norY = (static_cast<float>(j) + dy) /
+                    const float norY = (static_cast<float>(j) + deviate.y) /
                                         static_cast<float>(setting.height);
                     const Ray rayDir = camera.generateRay(norX, norY);
-                    framebuffer[frame_idx] += integrator.radiance(rayDir, scene, 0) * spp_inv;
+                    framebuffer[frame_idx] +=
+                        integrator.radiance(rayDir,scene,sampler,0) * spp_inv;
                 }
             }
             ++completed_row;

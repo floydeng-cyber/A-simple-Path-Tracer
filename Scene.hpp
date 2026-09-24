@@ -1,11 +1,14 @@
 ﻿#pragma once
 #include <vector>
+
 #include "Vector.hpp"
 #include "Object.hpp"
 #include "Light.hpp"
 #include "AreaLight.hpp"
 #include "BVH.hpp"
 #include "Ray.hpp"
+
+class Sampler;
 
 class Scene {
 public:
@@ -21,7 +24,7 @@ public:
     Intersection intersect(const Ray& ray) const;
     BVHAccel *bvh;
     void buildBVH();
-    void sampleLight(Intersection &pos, float &pdf) const;
+    void sampleLight(Intersection &pos, float &pdf, Sampler& sampler) const;
     bool trace(const Ray &ray, const std::vector<Object*> &objects, float &tNear, uint32_t &index, Object **hitObject);
     std::tuple<Vector3f, Vector3f> HandleAreaLight(const AreaLight &light, const Vector3f &hitPoint, const Vector3f &N,
                                                    const Vector3f &shadowPointOrig,
@@ -48,8 +51,7 @@ public:
 // If the ray is outside, you need to make cosi positive cosi = -N.I
 //
 // If the ray is inside, you need to invert the refractive indices and negate the normal N
-    Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior) const
-    {
+    Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior) const {
         float cosi = clamp(-1, 1, dotProduct(I, N));
         float etai = 1, etat = ior;
         Vector3f n = N;

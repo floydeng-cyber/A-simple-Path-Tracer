@@ -1,9 +1,4 @@
-//
-// Created by LEI XU on 5/16/19.
-//
-
-#ifndef RAYTRACING_BVH_H
-#define RAYTRACING_BVH_H
+﻿#pragma once
 
 #include <atomic>
 #include <vector>
@@ -14,6 +9,8 @@
 #include "Bounds3.hpp"
 #include "Intersection.hpp"
 #include "Vector.hpp"
+
+class Sampler;
 
 struct BVHBuildNode;
 // BVHAccel Forward Declarations
@@ -45,8 +42,8 @@ public:
     const SplitMethod splitMethod;
     std::vector<Object*> primitives;
 
-    void getSample(BVHBuildNode* node, float p, Intersection &pos, float &pdf);
-    void Sample(Intersection &pos, float &pdf);
+    void Sample(Intersection& pos, float& pdf, Sampler& sampler);
+    void getSample(BVHBuildNode* node, float pt, Intersection& pos, float& pdf, Sampler& sampler);
 };
 
 struct BVHBuildNode {
@@ -65,8 +62,3 @@ public:
         object = nullptr;
     }
 };
-
-
-
-
-#endif //RAYTRACING_BVH_H

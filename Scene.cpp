@@ -1,33 +1,46 @@
 ﻿#include "Scene.hpp"
-#include "SingletLens.h"
+#include "Sampler.hpp"
 
 void Scene::buildBVH() {
     printf(" - Generating BVH...\n\n");
     this->bvh = new BVHAccel(objects, 1, BVHAccel::SplitMethod::NAIVE);
 }
 
-Intersection Scene::intersect(const Ray &ray) const {
+Intersection Scene::intersect(const Ray& ray) const {
     return this->bvh->Intersect(ray);
 }
 
-void Scene::sampleLight(Intersection &pos, float &pdf) const {
-    float emit_area_sum = 0;
-    for (uint32_t k = 0; k < objects.size(); ++k) {
-        if (objects[k]->hasEmit()){
-            emit_area_sum += objects[k]->getArea();
-        }
+void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
+    float emit_area_sum = 0.f;
+
+    for (Object* object : objects) {
+        if (object->hasEmit())  // accumulate emisstion area
+            emit_area_sum += object->getArea();
     }
-    float p = get_random_float() * emit_area_sum;
+    if (emit_area_sum <= 0.f) {
+        pos = Intersection();
+        pdf = 0.f;
+        return;
+    }
+
+    const float samplePos = sampler.randFloat() * emit_area_sum;
+    float total_emit_area = emit_area_sum;
     emit_area_sum = 0;
-    for (uint32_t k = 0; k < objects.size(); ++k) {
-        if (objects[k]->hasEmit()){
-            emit_area_sum += objects[k]->getArea();
-            if (p <= emit_area_sum){
-                objects[k]->Sample(pos, pdf);
-                break;
+
+    for (Object* object : objects) {
+        if (object->hasEmit()) {
+            emit_area_sum += object->getArea();
+
+            if (samplePos <= emit_area_sum){
+                object->Sample(pos, pdf, sampler);
+                const float emitProbability = samplePos / total_emit_area;
+                pdf *= emitProbability;
+                return;
             }
         }
     }
+    pos = Intersection();
+    pdf = 0.f;
 }
 
 bool Scene::trace(

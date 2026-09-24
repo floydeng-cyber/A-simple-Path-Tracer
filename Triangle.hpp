@@ -1,13 +1,14 @@
 ﻿#pragma once
 
+#include <cassert>
+#include <array>
+
 #include "BVH.hpp"
 #include "Intersection.hpp"
 #include "Material.hpp"
 #include "OBJ_Loader.hpp"
 #include "Object.hpp"
-#include "Triangle.hpp"
-#include <cassert>
-#include <array>
+#include "Sampler.hpp"
 
 bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
                           const Vector3f& v2, const Vector3f& orig,
@@ -71,18 +72,24 @@ public:
     }
     Vector3f evalDiffuseColor(const Vector2f&) const override;
     Bounds3 getBounds() override;
-    void Sample(Intersection &pos, float &pdf){
-        float x = std::sqrt(get_random_float()), y = get_random_float();
-        pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
+    void Sample(Intersection& pos, float& pdf, Sampler& sampler){
+        // u: Distance along triangle (0 @(vertex0), 1 @base(v1-v2))
+        // sqrt() shifts sampling away from corners
+        float u = std::sqrt(sampler.randFloat()),
+              v = sampler.randFloat();  // v: Position along base(v1-v1)
+
+        pos.coords = v0 * (1.f - u)
+                   + v1 * (u * (1.f - v))
+                   + v2 * (u * v);
+
         pos.normal = this->normal;
-        pdf = 1.0f / area;
+        pos.emit = m->getEmission();
+
+        pdf = 1.f / area;
     }
-    float getArea(){
-        return area;
-    }
-    bool hasEmit(){
-        return m->hasEmission();
-    }
+
+    float getArea() { return area; }
+    bool hasEmit() { return m->hasEmission(); }
 };
 
 class MeshTriangle : public Object
@@ -194,8 +201,8 @@ public:
         return intersec;
     }
     
-    void Sample(Intersection &pos, float &pdf){
-        bvh->Sample(pos, pdf);
+    void Sample(Intersection& pos, float& pdf, Sampler& sampler){
+        bvh->Sample(pos, pdf, sampler);
         pos.emit = m->getEmission();
     }
     float getArea(){
@@ -228,8 +235,7 @@ inline bool Triangle::intersect(const Ray& ray, float& tnear,
 
 inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 
-inline Intersection Triangle::getIntersection(Ray ray)
-{
+inline Intersection Triangle::getIntersection(Ray ray) {
     Intersection inter;
 
     if (dotProduct(ray.direction, normal) > 0)

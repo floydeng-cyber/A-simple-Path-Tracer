@@ -1,12 +1,14 @@
 ﻿#include <algorithm>
 #include <cassert>
+
 #include "BVH.hpp"
+#include "Sampler.hpp"
 
 BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
                    SplitMethod splitMethod)
     : maxPrimsInNode(std::min(255, maxPrimsInNode)), splitMethod(splitMethod),
-      primitives(std::move(p))
-{
+      primitives(std::move(p)) {
+
     time_t start, stop;
     time(&start);
     if (primitives.empty())
@@ -25,8 +27,7 @@ BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
         hrs, mins, secs);
 }
 
-BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
-{
+BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects) {
     BVHBuildNode* node = new BVHBuildNode();
 
     // Compute bounds of all primitives in BVH node
@@ -96,8 +97,7 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
     return node;
 }
 
-Intersection BVHAccel::Intersect(const Ray& ray) const
-{
+Intersection BVHAccel::Intersect(const Ray& ray) const {
     Intersection isect;
     if (!root)
         return isect;
@@ -105,8 +105,7 @@ Intersection BVHAccel::Intersect(const Ray& ray) const
     return isect;
 }
 
-Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
-{
+Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const {
     // TODO Traverse the BVH to find intersection
     Intersection isect;
 
@@ -131,18 +130,23 @@ Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
 }
 
 
-void BVHAccel::getSample(BVHBuildNode* node, float p, Intersection &pos, float &pdf){
-    if(node->left == nullptr || node->right == nullptr){
-        node->object->Sample(pos, pdf);
+void BVHAccel::getSample(BVHBuildNode* node, float samplePos, Intersection& pos, float& pdf, Sampler& sampler){
+    if(node->left == nullptr || node->right == nullptr) { // is leaf node
+        node->object->Sample(pos, pdf, sampler);
         pdf *= node->area;
         return;
     }
-    if(p < node->left->area) getSample(node->left, p, pos, pdf);
-    else getSample(node->right, p - node->left->area, pos, pdf);
+
+    if(samplePos < node->left->area)
+        getSample(node->left, samplePos, pos, pdf, sampler);
+    else
+        getSample(node->right, samplePos - node->left->area, pos, pdf, sampler);
 }
 
-void BVHAccel::Sample(Intersection &pos, float &pdf){
-    float p = std::sqrt(get_random_float()) * root->area;
-    getSample(root, p, pos, pdf);
+void BVHAccel::Sample(Intersection& pos, float& pdf, Sampler& sampler){
+    const float samplePos = sampler.randFloat() * root->area;
+
+    getSample(root, samplePos, pos, pdf, sampler);
+
     pdf /= root->area;
 }

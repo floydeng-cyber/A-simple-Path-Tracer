@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Scene.hpp"
 #include "Camera.hpp"
+#include "RenderSettings.hpp"
 #include "Integrator.hpp"
 
 struct hit_payload {

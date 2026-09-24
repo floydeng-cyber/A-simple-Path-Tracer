@@ -3,6 +3,7 @@
 #include "Vector.hpp"
 #include "Light.hpp"
 #include "global.hpp"
+#include "Sampler.hpp"
 
 class AreaLight : public Light {
 public:
@@ -13,11 +14,9 @@ public:
         length = 100;
     }
 
-    Vector3f SamplePoint() const
-    {
-        auto random_u = get_random_float();
-        auto random_v = get_random_float();
-        return position + random_u * u + random_v * v;
+    Vector3f SamplePoint(Sampler& sampler) const {
+        return position + sampler.randFloat() * u
+                        + sampler.randFloat() * v;
     }
 
     float length;

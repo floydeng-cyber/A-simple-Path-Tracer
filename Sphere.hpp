@@ -1,14 +1,10 @@
-﻿//
-// Created by LEI XU on 5/13/19.
-//
-
-#ifndef RAYTRACING_SPHERE_H
-#define RAYTRACING_SPHERE_H
+﻿#pragma once
 
 #include "Object.hpp"
 #include "Vector.hpp"
 #include "Bounds3.hpp"
 #include "Material.hpp"
+#include "Sampler.hpp"
 
 class Sphere : public Object{
 public:
@@ -16,7 +12,8 @@ public:
     float radius, radius2;
     Material *m;
     float area;
-    Sphere(const Vector3f &c, const float &r, Material* mt = new Material()) : center(c), radius(r), radius2(r * r), m(mt), area(4 * M_PI *r *r) {}
+    Sphere(const Vector3f &pos, const float &r, Material* mt = new Material())
+        : center(pos), radius(r), radius2(r * r), m(mt), area(4 * M_PI *r *r) {}
     bool intersect(const Ray& ray) {
         // analytic solution
         Vector3f L = ray.origin - center;
@@ -78,23 +75,38 @@ public:
         return Bounds3(Vector3f(center.x-radius, center.y-radius, center.z-radius),
                        Vector3f(center.x+radius, center.y+radius, center.z+radius));
     }
-    void Sample(Intersection &pos, float &pdf){
-        float theta = 2.0 * M_PI * get_random_float(), phi = M_PI * get_random_float();
-        Vector3f dir(std::cos(phi), std::sin(phi)*std::cos(theta), std::sin(phi)*std::sin(theta));
-        pos.coords = center + radius * dir;
-        pos.normal = dir;
+    void Sample(Intersection& pos, float& pdf, Sampler& sampler){
+        // ==== Abandoned Sampling in Polar Coordinate ====
+        //float theta = 2.0 * M_PI * sampler.randFloat(),
+        //       phi = M_PI * sampler.randFloat();
+        //Vector3f dir(std::cos(phi), std::sin(phi)*std::cos(theta), std::sin(phi)*std::sin(theta));
+        //pos.coords = center + radius * dir;
+        //pos.normal = dir;
+        //pos.emit = m->getEmission();
+        //pdf = 1.0f / area;
+
+        // == uniform sampling in Cartesian ==
+        const float heightSample  = sampler.randFloat(); // ~ [0,1]
+        const float azimuthSample = sampler.randFloat(); // ~ [0,1]
+
+        const float norHeight = 1.f - 2.f * heightSample; // ~ [-1,1]
+        const float horizontal_radius = std::sqrtf(
+            std::max(0.f, 1.f - norHeight * norHeight)
+        );
+        const float azimuthAng = 2.f * M_PI * azimuthSample; // ~ [0, 2pi]
+
+        const Vector3f surfaceNormal(   // surface normal
+            horizontal_radius * std::cos(azimuthAng),
+            horizontal_radius * std::sin(azimuthAng),
+            norHeight
+        );
+
+        pos.coords = center + radius * surfaceNormal;
+        pos.normal = surfaceNormal;
         pos.emit = m->getEmission();
-        pdf = 1.0f / area;
+        pdf = 1.f / area;
     }
-    float getArea(){
-        return area;
-    }
-    bool hasEmit(){
-        return m->hasEmission();
-    }
+
+    float getArea() { return area; }
+    bool hasEmit() { return m->hasEmission(); }
 };
-
-
-
-
-#endif //RAYTRACING_SPHERE_H

@@ -1,11 +1,7 @@
-﻿//
-// Created by LEI XU on 5/16/19.
-//
-
-#ifndef RAYTRACING_MATERIAL_H
-#define RAYTRACING_MATERIAL_H
+﻿#pragma once
 
 #include "Vector.hpp"
+#include "Sampler.hpp"
 
 enum MaterialType {
     DIFFUSE,
@@ -128,8 +124,8 @@ public:
     inline bool hasEmission();
 
     // sample a ray by Material properties
-    inline Vector3f sample(const Vector3f &wi, const Vector3f &N);
-    // given a ray, calculate the PdF of this ray
+    inline Vector3f sample(const Vector3f &wi, const Vector3f &N, Sampler& sampler);
+    // given a ray, calculate the PDF of this ray
     inline float pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
     // given a ray, calculate the contribution of this ray
     inline Vector3f eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
@@ -155,11 +151,11 @@ Vector3f Material::getColorAt(double u, double v) {
 }
 
 
-Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
+Vector3f Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& sampler){
     switch(m_type){
         case DIFFUSE: {
             // uniform sample on the hemisphere
-            float x_1 = get_random_float(), x_2 = get_random_float();
+            float x_1 = sampler.randFloat(), x_2 = sampler.randFloat();
             float z = std::fabs(1.0f - 2.0f * x_1);
             float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
             Vector3f localRay(r * std::cos(phi), r * std::sin(phi), z);
@@ -168,7 +164,7 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
         }
         case MICROFACET: {
             // uniform sample on the hemisphere
-            float x_1 = get_random_float(), x_2 = get_random_float();
+            float x_1 = sampler.randFloat(), x_2 = sampler.randFloat();
             float z = std::fabs(1.0f - 2.0f * x_1);
             float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
             Vector3f localRay(r * std::cos(phi), r * std::sin(phi), z);
@@ -266,5 +262,3 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
     }
     return Vector3f(0.f);
 }
-
-#endif //RAYTRACING_MATERIAL_H

@@ -7,7 +7,6 @@
 #include <chrono>
 #include <atomic>
 
-#include "SingletLens.h"
 #include "RenderSettings.hpp"
 #include "Camera.hpp"
 #include "PathTracingIntegrator.hpp"
@@ -48,17 +47,17 @@ int main(int argc, char** argv) {
     Material* mirror = new Material(MIRROR);
     mirror->Ks = Vector3f(0.95f);
 
-    // Creating the singlet lens ===============================
-    Material* lensMaterial = new Material(DIELECTRIC);
-    lensMaterial->Kd = Vector3f(0.55f, 0.82f, 0.95f);
-    lensMaterial->Ks = Vector3f(0.92f, 0.97f, 1.0f);
-    lensMaterial->ior = 1.52f;
-
     // Transparent sphere centered in the camera view and clear of the boxes.
     Material* sphereMaterial = new Material(DIELECTRIC);
     sphereMaterial->Ks = Vector3f(1.0f);
     sphereMaterial->ior = 1.52f;
     Sphere transparentSphere(Vector3f(278.f, 273.f, 170.f), 65.f, sphereMaterial);
+
+    // Temporal multiple emissive objects
+    //Sphere temporaryLight(
+    //    Vector3f(420.f, 450.f, 300.f), 20.f, light
+    //);
+    //scene.Add(&temporaryLight);
 
     MeshTriangle floor      ("models/cornellbox/floor.obj", white);
 

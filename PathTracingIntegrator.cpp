@@ -2,6 +2,7 @@
 
 #include "Scene.hpp"
 #include "RenderSettings.hpp"
+#include "Sampler.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -13,8 +14,9 @@ PathTracingIntegrator::PathTracingIntegrator(
 Vector3f PathTracingIntegrator::radiance(
 	const Ray& ray,
 	const Scene& scene,
+    Sampler& sampler,
 	int depth) const {
-
+    
     if (depth > setting.MaxDepth)
         return Vector3f(0.f);   // max depth reached; return 0's
 
@@ -38,6 +40,7 @@ Vector3f PathTracingIntegrator::radiance(
         return radiance(    // recusive call
             Ray(p_hit + biasNormal * EPSILON, transmitDir), // start point, direction
             scene,         // the scene
+            sampler,       // random sampler
             depth + 1      // depth increment for recursion
             ) * hit.m->Ks; // specular reflectance Ks
     }
@@ -46,9 +49,9 @@ Vector3f PathTracingIntegrator::radiance(
     // ===========================================================================
     Vector3f L_indir(0.f);
     if (depth <= setting.MaxDepth && !hit.m->hasEmission() && // check cur. depth AND emission
-        get_random_float() <= setting.rusRoulette) { // Survive the Russian roulette?
+        sampler.randFloat() <= setting.rusRoulette) { // Survive the Russian roulette?
         
-        const Vector3f wi = normalize(hit.m->sample(wo, N_hit));
+        const Vector3f wi = normalize(hit.m->sample(wo, N_hit, sampler));
         const Ray path_ray(p_hit + N_hit * EPSILON, wi);
 
         //Intersection path_hit = intersect(path_ray);
@@ -57,7 +60,7 @@ Vector3f PathTracingIntegrator::radiance(
         float pdf_indir = hit.m->pdf(wo, wi, N_hit);
 
         if (cos_theta > 0.f && pdf_indir > EPSILON)
-            L_indir = radiance(path_ray, scene, depth + 1) // Light      (next object)
+            L_indir = radiance(path_ray, scene, sampler, depth + 1) // Light      (next object)
                     * hit.m->eval(wo, wi, N_hit)         // BRDF        (hit surface)
                     * cos_theta                         // Direct-ness  (ray from hit surface)
                     / (pdf_indir * setting.rusRoulette);
@@ -75,7 +78,7 @@ Vector3f PathTracingIntegrator::radiance(
     // ===========================================================================
     Intersection intersect_light;   // Initiate Detection of light source
     float pdf_light = 0.f;          // Initiate Probablity Distribution Function
-    scene.sampleLight(intersect_light, pdf_light); // Chose one light source (changed inputted values)
+    scene.sampleLight(intersect_light, pdf_light, sampler); // Chose one light source (changed inputted values)
 
     Vector3f L_dir(0.f); // Direct light: If shadow ray hits the light source
     if (pdf_light > EPSILON) {

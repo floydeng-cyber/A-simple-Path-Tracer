@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <string>
+#include <cstdint>
 
 struct RenderSettings {
 	int width		= 400;		// Image width  [pixel]
@@ -10,4 +11,6 @@ struct RenderSettings {
 	int threadCount	= 0;		// # of threads (default = 0 = hardware_concurrency)
 	int fov			= 40;		// vertical field of view
 	std::string outputFile = "cornellBox.ppm";	// rendered image name
+
+	std::uint64_t randSeed = 42;	// ultimate answer of everything
 };

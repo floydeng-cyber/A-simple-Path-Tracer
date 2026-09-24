@@ -1,9 +1,4 @@
-//
-// Created by LEI XU on 5/13/19.
-//
-#pragma once
-#ifndef RAYTRACING_OBJECT_H
-#define RAYTRACING_OBJECT_H
+﻿#pragma once
 
 #include "Vector.hpp"
 #include "global.hpp"
@@ -11,8 +6,9 @@
 #include "Ray.hpp"
 #include "Intersection.hpp"
 
-class Object
-{
+class Sampler;
+
+class Object {
 public:
     Object() {}
     virtual ~Object() {}
@@ -23,10 +19,8 @@ public:
     virtual Vector3f evalDiffuseColor(const Vector2f &) const =0;
     virtual Bounds3 getBounds()=0;
     virtual float getArea()=0;
-    virtual void Sample(Intersection &pos, float &pdf)=0;
+    virtual void Sample(Intersection &pos,
+                        float &pdf,
+                        Sampler& sampler) = 0;
     virtual bool hasEmit()=0;
 };
-
-
-
-#endif //RAYTRACING_OBJECT_H
