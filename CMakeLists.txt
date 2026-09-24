@@ -8,7 +8,8 @@ add_executable(Path_Tracing_rev
 	Triangle.hpp	Scene.cpp	Scene.hpp	Light.hpp	AreaLight.hpp
 	BVH.cpp		BVH.hpp		Bounds3.hpp	Ray.hpp		Material.hpp	Intersection.hpp
         Renderer.cpp	Renderer.hpp	Camera.cpp	Camera.hpp	Integrator.hpp
-	PathTracingIntegrator.hpp	PathTracingIntegrator.cpp	Sampler.hpp)
+	PathTracingIntegrator.hpp	PathTracingIntegrator.cpp	Sampler.hpp
+	PhotonMappingIntegrator.hpp	PhotonMappingIntegrator.cpp)
 
 if(MSVC)
     target_compile_options(Path_Tracing_rev PRIVATE /W4)

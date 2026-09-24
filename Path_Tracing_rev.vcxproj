@@ -153,6 +153,7 @@
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="PathTracingIntegrator.hpp" />
+    <ClInclude Include="PhotonMappingIntegrator.hpp" />
     <ClInclude Include="RenderSettings.hpp" />
     <ClInclude Include="Sampler.hpp" />
     <ClInclude Include="Object.hpp" />
@@ -169,6 +170,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PathTracingIntegrator.cpp" />
+    <ClCompile Include="PhotonMappingIntegrator.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Scene.cpp" />
   </ItemGroup>

@@ -10,6 +10,8 @@ class Integrator {
 public:
 	virtual ~Integrator() = default;
 
+	virtual void preProcess(const Scene&, Sampler&) {}
+
 	virtual Vector3f radiance(
 		const Ray& ray,
 		const Scene& scene,

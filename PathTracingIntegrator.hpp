@@ -1,8 +1,11 @@
 ﻿#pragma once
+
 #include "Integrator.hpp"
 #include "RenderSettings.hpp"
 
 class PathTracingIntegrator final: public Integrator {
+private:
+	RenderSettings setting;
 public:
 	explicit PathTracingIntegrator(const RenderSettings& set);
 
@@ -10,9 +13,5 @@ public:
 		const Ray& ray,
 		const Scene& scene,
 		Sampler& sampler,
-		int depth
-	) const override;
-
-private:
-	RenderSettings setting;
+		int depth) const override;
 };

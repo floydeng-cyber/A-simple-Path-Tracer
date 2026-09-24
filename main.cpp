@@ -1,15 +1,18 @@
-﻿#include "Renderer.hpp"
+﻿#include <chrono>
+#include <atomic>
+
+#include "Renderer.hpp"
 #include "Scene.hpp"
 #include "Triangle.hpp"
 #include "Sphere.hpp"
 #include "Vector.hpp"
 #include "global.hpp"
-#include <chrono>
-#include <atomic>
 
 #include "RenderSettings.hpp"
 #include "Camera.hpp"
+#include "Sampler.hpp"
 #include "PathTracingIntegrator.hpp"
+#include "PhotonMappingIntegrator.hpp"
 
 // In the main function of the program, we create the scene (create objects and
 // lights) as well as set the options for the render (image width and height,
@@ -74,10 +77,14 @@ int main(int argc, char** argv) {
     scene.buildBVH();
 
     Renderer FloydRender;
-    PathTracingIntegrator integrator1(setting);
+    PathTracingIntegrator integratorPath(setting);
+
+    PhotonMappingIntegrator integratorPhoton(setting);
+    Sampler preProcessSampler(setting.randSeed ^ 0xd1b54a32d192ed03ULL);
+    integratorPhoton.preProcess(scene, preProcessSampler);
 
     auto start = std::chrono::system_clock::now();
-    FloydRender.Render(scene, camera, integrator1, setting);
+    FloydRender.Render(scene, camera, integratorPath, setting);
     auto stop = std::chrono::system_clock::now();
 
     std::cout << "Render complete: \n";

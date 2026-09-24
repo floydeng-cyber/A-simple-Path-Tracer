@@ -79,6 +79,9 @@
     <ClInclude Include="Sampler.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PhotonMappingIntegrator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BVH.cpp">
@@ -97,6 +100,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PathTracingIntegrator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PhotonMappingIntegrator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

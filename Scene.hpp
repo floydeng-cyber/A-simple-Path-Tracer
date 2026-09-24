@@ -14,6 +14,18 @@
 
 class Sampler;
 
+struct PhotonEmissionSample {
+    Vector3f position = Vector3f(0.f);
+    Vector3f normal = Vector3f(0.f);
+    Vector3f direction = Vector3f(0.f);
+    Vector3f power = Vector3f(0.f);
+
+    float pdfArea = 0.f;
+    float pdfDir = 0.f;
+
+    bool isValid() const { return pdfArea > 0.f && pdfDir > 0.f; }
+};
+
 class Scene {
 private:
     // This order controls destruction order:
@@ -57,6 +69,9 @@ public:
     void buildBVH();
 
     void sampleLight(Intersection &pos, float &pdf, Sampler& sampler) const;
+
+    PhotonEmissionSample samplePhotonEmission(std::size_t photonCount, Sampler& sampler) const;
+
     bool trace(const Ray &ray, const std::vector<Object*> &objects, float &tNear, uint32_t &index, Object **hitObject);
     std::tuple<Vector3f, Vector3f> HandleAreaLight(const AreaLight &light, const Vector3f &hitPoint, const Vector3f &N,
                                                    const Vector3f &shadowPointOrig,
