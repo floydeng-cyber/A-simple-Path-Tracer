@@ -30,51 +30,46 @@ int main(int argc, char** argv) {
 
     Scene scene;  // Create scene
 
-    Material* red = new Material(DIFFUSE, Vector3f(0.0f));
-    red->Kd = Vector3f(0.63f, 0.065f, 0.05f);
-    Material* green = new Material(DIFFUSE, Vector3f(0.0f));
-    green->Kd = Vector3f(0.14f, 0.45f, 0.091f);
-    Material* white = new Material(DIFFUSE, Vector3f(0.0f));
-    white->Kd = Vector3f(0.725f, 0.71f, 0.68f);
-    Material* light = new Material(DIFFUSE, (8.0f * Vector3f(0.747f+0.058f, 0.747f+0.258f, 0.747f) + 15.6f * Vector3f(0.740f+0.287f,0.740f+0.160f,0.740f) + 18.4f *Vector3f(0.737f+0.642f,0.737f+0.159f,0.737f)));
-    light->Kd = Vector3f(0.65f);
+    Material& red = scene.createMaterial(DIFFUSE);
+    red.Kd = Vector3f(0.63f, 0.065f, 0.05f);
 
-    Material* glossy = new Material(MICROFACET);
-    glossy->Kd = Vector3f(0.6f, 0.2f, 0.1f);
-    glossy->roughness = 0.25f;
-    glossy->F0 = Vector3f(0.04f);
+    Material& green = scene.createMaterial(DIFFUSE);
+    green.Kd = Vector3f(0.14f, 0.45f, 0.091f);
 
-    Material* mirror = new Material(MIRROR);
-    mirror->Ks = Vector3f(0.95f);
+    Material& white = scene.createMaterial(DIFFUSE);;
+    white.Kd = Vector3f(0.725f, 0.71f, 0.68f);
+
+    Material& light = scene.createMaterial(DIFFUSE,
+           8.0f * Vector3f(0.747f+0.058f, 0.747f+0.258f, 0.747f)
+        + 15.6f * Vector3f(0.740f+0.287f, 0.740f+0.160f, 0.740f)
+        + 18.4f * Vector3f(0.737f+0.642f, 0.737f+0.159f, 0.737f));
+    light.Kd = Vector3f(0.65f);
+
+    Material& glossy = scene.createMaterial(MICROFACET);
+    glossy.Kd = Vector3f(0.6f, 0.2f, 0.1f);
+    glossy.F0 = Vector3f(0.04f);
+    glossy.roughness = 0.25f;
+
+    Material& mirror = scene.createMaterial(MIRROR);
+    mirror.Ks = Vector3f(0.95f);
 
     // Transparent sphere centered in the camera view and clear of the boxes.
-    Material* sphereMaterial = new Material(DIELECTRIC);
-    sphereMaterial->Ks = Vector3f(1.0f);
-    sphereMaterial->ior = 1.52f;
-    Sphere transparentSphere(Vector3f(278.f, 273.f, 170.f), 65.f, sphereMaterial);
+    Material& sphereMaterial = scene.createMaterial(DIELECTRIC);
+    sphereMaterial.Ks = Vector3f(1.0f);
+    sphereMaterial.ior = 1.52f;
+    scene.addObj<Sphere>(
+        Vector3f(278.f, 273.f, 170.f),  // center
+        65.f,                           // radius
+        &sphereMaterial);               // material
 
-    // Temporal multiple emissive objects
-    //Sphere temporaryLight(
-    //    Vector3f(420.f, 450.f, 300.f), 20.f, light
-    //);
-    //scene.Add(&temporaryLight);
+    scene.addObj<MeshTriangle>("models/cornellbox/floor.obj", &white);
 
-    MeshTriangle floor      ("models/cornellbox/floor.obj", white);
+    scene.addObj<MeshTriangle>("models/cornellbox/shortbox.obj", &white);
+    scene.addObj<MeshTriangle>("models/cornellbox/tallbox.obj", &white);
 
-    MeshTriangle shortbox   ("models/cornellbox/shortbox.obj", white);
-    MeshTriangle tallbox    ("models/cornellbox/tallbox.obj", white);
-
-    MeshTriangle left       ("models/cornellbox/left.obj", red);
-    MeshTriangle right      ("models/cornellbox/right.obj", green);
-    MeshTriangle light_     ("models/cornellbox/light.obj", light);
-
-    scene.Add(&floor);
-    scene.Add(&shortbox);
-    scene.Add(&tallbox);
-    scene.Add(&left);
-    scene.Add(&right);
-    scene.Add(&light_);
-    scene.Add(&transparentSphere);
+    scene.addObj<MeshTriangle>("models/cornellbox/left.obj", &red);
+    scene.addObj<MeshTriangle>("models/cornellbox/right.obj", &green);
+    scene.addObj<MeshTriangle>("models/cornellbox/light.obj", &light);
 
     scene.buildBVH();
 

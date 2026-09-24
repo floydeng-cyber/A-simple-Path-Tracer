@@ -18,7 +18,8 @@ public:
         return Vector3f(x / val, y / val, z / val);   // vector divides by a scalar
     }
 
-    float norm() {return std::sqrt(x * x + y * y + z * z);} // magnitude
+    float norm() const { return std::sqrt(x * x + y * y + z * z); } // magnitude
+    float norm2() const { return x * x + y * y + z * z; }   // magnitude squared
 
     Vector3f normalized() {
         float nInv = 1/std::sqrt(x * x + y * y + z * z);

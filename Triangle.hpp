@@ -39,8 +39,7 @@ bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
     return true;
 }
 
-class Triangle : public Object
-{
+class Triangle : public Object {
 public:
     Vector3f v0, v1, v2; // vertices A, B ,C , counter-clockwise order
     Vector3f e1, e2;     // 2 edges v1-v0, v2-v0;
@@ -50,8 +49,7 @@ public:
     Material* m;
 
     Triangle(Vector3f _v0, Vector3f _v1, Vector3f _v2, Material* _m = nullptr)
-        : v0(_v0), v1(_v1), v2(_v2), m(_m)
-    {
+        : v0(_v0), v1(_v1), v2(_v2), m(_m) {
         e1 = v1 - v0;
         e2 = v2 - v0;
         normal = normalize(crossProduct(e1, e2));
@@ -92,11 +90,9 @@ public:
     bool hasEmit() { return m->hasEmission(); }
 };
 
-class MeshTriangle : public Object
-{
+class MeshTriangle : public Object {
 public:
-    MeshTriangle(const std::string& filename, Material *mt = new Material())
-    {
+    MeshTriangle(const std::string& filename, Material *mt) {
         objl::Loader loader;
         loader.LoadFile(filename);
         area = 0;
@@ -138,7 +134,7 @@ public:
             ptrs.push_back(&tri);
             area += tri.area;
         }
-        bvh = new BVHAccel(ptrs);
+        bvh = std::make_unique<BVHAccel>(std::move(ptrs));
     }
 
     bool intersect(const Ray& ray) { return true; }
@@ -220,10 +216,9 @@ public:
 
     std::vector<Triangle> triangles;
 
-    BVHAccel* bvh;
-    float area;
-
-    Material* m;
+    std::unique_ptr<BVHAccel> bvh;
+    float area = 0.f;
+    Material* m = nullptr;
 };
 
 inline bool Triangle::intersect(const Ray& ray) { return true; }

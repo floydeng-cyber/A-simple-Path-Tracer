@@ -30,49 +30,28 @@ Vector3f PathTracingIntegrator::radiance(
     const Vector3f N_hit = hit.normal;  // Surface normal    of the hit
     const Vector3f wo = -ray.direction; // Inward ray vector of the hit
 
-    // transparent materials
-    if (hit.m->getType() == DIELECTRIC) {
-        const Vector3f transmitDir = normalize(
-            scene.refract(ray.direction, N_hit, hit.m->ior)
-        );
-        const Vector3f biasNormal = dotProduct(transmitDir, N_hit) < 0.f
-            ? -N_hit : N_hit;
-        return radiance(    // recusive call
-            Ray(p_hit + biasNormal * EPSILON, transmitDir), // start point, direction
-            scene,         // the scene
-            sampler,       // random sampler
-            depth + 1      // depth increment for recursion
-            ) * hit.m->Ks; // specular reflectance Ks
-    }
-
     // For indirect light : Sampling into space randomly
     // ===========================================================================
     Vector3f L_indir(0.f);
     if (depth <= setting.MaxDepth && !hit.m->hasEmission() && // check cur. depth AND emission
         sampler.randFloat() <= setting.rusRoulette) { // Survive the Russian roulette?
         
-        const Vector3f wi = normalize(hit.m->sample(wo, N_hit, sampler));
-        const Ray path_ray(p_hit + N_hit * EPSILON, wi);
+        const BSDFSample bsdf = hit.m->sample(wo, N_hit, sampler);
 
-        //Intersection path_hit = intersect(path_ray);
+        if (bsdf.isValid()) {
+            const Vector3f offsetNormal =
+                (dotProduct(bsdf.direction, N_hit) >= 0.f)
+                ? N_hit : -N_hit;
+            const Ray pathRay(p_hit + offsetNormal * EPSILON, bsdf.direction);
 
-        float cos_theta = dotProduct(wi, N_hit);
-        float pdf_indir = hit.m->pdf(wo, wi, N_hit);
-
-        if (cos_theta > 0.f && pdf_indir > EPSILON)
-            L_indir = radiance(path_ray, scene, sampler, depth + 1) // Light      (next object)
-                    * hit.m->eval(wo, wi, N_hit)         // BRDF        (hit surface)
-                    * cos_theta                         // Direct-ness  (ray from hit surface)
-                    / (pdf_indir * setting.rusRoulette);
-
-        // Special case: Hitting a Mirror
-        // ===========================================================================
-        if (hit.m->getType() == MIRROR) {
-            for (int i = 0; i < 3; ++i)
-                L_indir[i] = clamp(0, 1, L_indir[i]);
-            return L_indir;
+            L_indir =
+                radiance(pathRay, scene, sampler, depth+1) // Light      (next object)
+                * bsdf.weight
+                / setting.rusRoulette;
         }
     }
+
+    if (hit.m->isSpecular()) return L_indir;
 
     // For direct light : Sampling light sources randomly
     // ===========================================================================

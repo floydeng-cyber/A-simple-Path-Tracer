@@ -3,6 +3,33 @@
 #include "Vector.hpp"
 #include "Sampler.hpp"
 
+enum class ScatterEvent {
+    Invalid,
+    Diffuse,
+    Glossy,
+    Reflection,
+    Transmission
+};
+
+// bidirectional scattering distribution function
+struct BSDFSample {
+    Vector3f direction = Vector3f(0.f);
+    Vector3f weight = Vector3f(0.f);
+    float pdf = 0.f;
+    ScatterEvent event = ScatterEvent::Invalid;
+
+    bool isValid() const {
+        return event != ScatterEvent::Invalid
+            && pdf > 0.f
+            && direction.norm() > EPSILON;
+    }
+    
+    bool isSpecular() const {
+        return event == ScatterEvent::Reflection
+            || event == ScatterEvent::Transmission;
+    }
+};
+
 enum MaterialType {
     DIFFUSE,
     MICROFACET,
@@ -68,7 +95,7 @@ private:
         // kt = 1 - kr;
     }
 
-    Vector3f toWorld(const Vector3f &a, const Vector3f &N) {
+    Vector3f toWorld(const Vector3f &a, const Vector3f &N) const {
         Vector3f B, C;
         if (std::fabs(N.x) > std::fabs(N.y)) {
             float invLen = 1.0f / std::sqrt(N.x * N.x + N.z * N.z);
@@ -81,15 +108,15 @@ private:
         return a.x * B + a.y * C + a.z * N;
     }
 
-    float DistRough(float& NdotHalf, float& roughness) const {
+    float DistRough(float NdotHalf, float roughness) const {
         float rough2 = roughness * roughness;
         float alpha2 = rough2 * rough2;
         float denom1 = 1.f + (NdotHalf*NdotHalf) * (alpha2-1.f);
         return alpha2 / std::max(EPSILON, M_PI * denom1 * denom1);
     }
 
-    float GeoSmith(float& NdotView, float& NdotLight, float& roughness) {
-        auto Schlick = [&](float& Ndot)->float {
+    float GeoSmith(float NdotView, float NdotLight, float roughness) const {
+        auto Schlick = [roughness](float Ndot)->float {
             float r = roughness + 1.f;
             float k = (r * r) / 8.f;
             return Ndot / std::max(EPSILON, Ndot * (1.f - k) + k);
@@ -98,7 +125,7 @@ private:
         return Schlick(NdotView) * Schlick(NdotLight);
     }
 
-    Vector3f FresnelSchlick(float& cosTheta, const Vector3f& F0) const {
+    Vector3f FresnelSchlick(float cosTheta, const Vector3f& F0) const {
         return F0 + (Vector3f(1.f) - F0) * std::pow(
             1.f - clamp(0, 1, cosTheta),
             5.f);
@@ -108,40 +135,46 @@ public:
     float roughness = 0.5f;         // 0.05=mirror-like -> 0.8=rough
     Vector3f F0 = Vector3f(0.04f);  // Reflectance @normal-incidence
 
-    MaterialType m_type;
-    //Vector3f m_color;
-    Vector3f m_emission;
-    float ior;
-    Vector3f Kd, Ks;
-    float specularExponent;
-    //Texture tex;
+    MaterialType m_type = DIFFUSE;
+    Vector3f m_emission = Vector3f(0.f);
+    float ior = 1.5f;
+    Vector3f Kd = Vector3f(0.f), Ks = Vector3f(0.f);
+    float specularExponent = 32.f;
 
     inline Material(MaterialType t=DIFFUSE, Vector3f e=Vector3f(0,0,0));
-    inline MaterialType getType();
-    //inline Vector3f getColor();
-    inline Vector3f getColorAt(double u, double v);
-    inline Vector3f getEmission();
-    inline bool hasEmission();
+    inline MaterialType getType() const;
 
-    // sample a ray by Material properties
-    inline Vector3f sample(const Vector3f &wi, const Vector3f &N, Sampler& sampler);
-    // given a ray, calculate the PDF of this ray
-    inline float pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
+    inline bool isSpecular() const {
+        return m_type == MIRROR || m_type == DIELECTRIC;
+    }
+
+    inline BSDFSample sample(   // sample a ray by Material properties
+        const Vector3f& wi,
+        const Vector3f& N,
+        Sampler& sampler) const;
+
+    inline float pdf(   // given a ray, calculate the PDF of this ray
+        const Vector3f& wi,
+        const Vector3f& wo,
+        const Vector3f& N) const;
+
     // given a ray, calculate the contribution of this ray
-    inline Vector3f eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
+    inline Vector3f eval(
+        const Vector3f& wi,
+        const Vector3f& wo,
+        const Vector3f& N) const;
 
+    inline Vector3f getColorAt(double u, double v);
+    inline Vector3f getEmission() const;
+    inline bool hasEmission() const;
 };
 
-Material::Material(MaterialType t, Vector3f e){
-    m_type = t;
-    //m_color = c;
-    m_emission = e;
-}
+Material::Material(MaterialType type, Vector3f emit)
+    : m_type(type), m_emission(emit) {}
 
-MaterialType Material::getType(){ return m_type;}
-///Vector3f Material::getColor(){ return m_color;}
-Vector3f Material::getEmission() { return m_emission;}
-bool Material::hasEmission() {
+MaterialType Material::getType() const { return m_type;}
+Vector3f Material::getEmission() const { return m_emission;}
+bool Material::hasEmission() const {
     if (m_emission.norm() > EPSILON) return true;
     else return false;
 }
@@ -151,39 +184,69 @@ Vector3f Material::getColorAt(double u, double v) {
 }
 
 
-Vector3f Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& sampler){
+BSDFSample Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& sampler) const {
     switch(m_type){
-        case DIFFUSE: {
-            // uniform sample on the hemisphere
-            float x_1 = sampler.randFloat(), x_2 = sampler.randFloat();
-            float z = std::fabs(1.0f - 2.0f * x_1);
-            float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
-            Vector3f localRay(r * std::cos(phi), r * std::sin(phi), z);
-            return toWorld(localRay, N);
-            break;
-        }
+        case DIFFUSE:
         case MICROFACET: {
             // uniform sample on the hemisphere
-            float x_1 = sampler.randFloat(), x_2 = sampler.randFloat();
-            float z = std::fabs(1.0f - 2.0f * x_1);
-            float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
-            Vector3f localRay(r * std::cos(phi), r * std::sin(phi), z);
-            return toWorld(localRay, N);
-            break;
+            const float x_1 = sampler.randFloat(),
+                        x_2 = sampler.randFloat();
+            const float z = std::fabs(1.0f - 2.0f * x_1);
+            const float r = std::sqrt(1.0f - z * z);
+            const float phi = 2.f * M_PI * x_2;
+
+            const Vector3f woLocal(r * std::cos(phi), r * std::sin(phi), z);
+            const Vector3f wo = normalize(toWorld(woLocal, N));
+
+            const float samplePDF = pdf(wi, wo, N);
+            if (samplePDF <= EPSILON) return {};
+
+            const float cosTheta = std::max(0.f, dotProduct(N, wo));
+            const Vector3f bsdfVal = eval(wi, wo, N);
+                
+            return BSDFSample{
+                wo,
+                bsdfVal * cosTheta / samplePDF,
+                samplePDF,
+                (m_type == DIFFUSE) ? ScatterEvent::Diffuse : ScatterEvent::Glossy
+            };
         }
         case MIRROR: {
-            return reflect(-wi, N);
-            break;
+            return BSDFSample{
+                normalize(reflect(-wi, N)),
+                Ks,
+                1.f,
+                ScatterEvent::Reflection
+            };
         }
         case DIELECTRIC: {
-            return normalize(refract(-wi, N, ior));
-            break;
+            float PR_reflect = 0.f;
+            fresnel(-wi, N, ior, PR_reflect);
+
+            if (sampler.randFloat() < PR_reflect) { // light reflected
+                return BSDFSample{
+                    normalize(reflect(-wi, N)),
+                    Ks,
+                    std::max(EPSILON, PR_reflect),
+                    ScatterEvent::Reflection
+                };
+            }
+
+            const Vector3f transmitted = refract(-wi, N, ior);
+            if (transmitted.norm2() <= EPSILON*EPSILON) return {};
+
+            return BSDFSample{
+                normalize(transmitted),
+                Ks,
+                std::max(EPSILON, 1.f - PR_reflect),
+                ScatterEvent::Transmission
+            };
         }
     }
-    return Vector3f(0.f);
+    return {};
 }
 
-float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
+float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N) const {
     if ( !(dotProduct(wo, N) > 0.f) )
         return 0.f;
 
@@ -210,7 +273,7 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
     return 0.f;
 }
 
-Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
+Vector3f Material::eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& N) const {
     float cosAlpha = dotProduct(N, wo);
     if ( !(cosAlpha > 0.f) )
         return Vector3f(0.f);
@@ -234,8 +297,8 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             if (NdotView <= EPSILON || NdotLight <= EPSILON)
                 return Vector3f(0.f);
 
-            float    Dist    = DistRough(NdotHalf, roughness);
-            float    Geo     = GeoSmith(NdotView, NdotLight, roughness);
+            float Dist = DistRough(NdotHalf, roughness);
+            float Geo  = GeoSmith(NdotView, NdotLight, roughness);
             Vector3f Fresnel = FresnelSchlick(ViewDotHalf, F0);
 
             Vector3f specular = Fresnel * Dist * Geo

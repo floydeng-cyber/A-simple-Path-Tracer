@@ -10,9 +10,9 @@ class Sphere : public Object{
 public:
     Vector3f center;
     float radius, radius2;
-    Material *m;
+    Material *m = nullptr;
     float area;
-    Sphere(const Vector3f &pos, const float &r, Material* mt = new Material())
+    Sphere(const Vector3f &pos, const float &r, Material* mt)
         : center(pos), radius(r), radius2(r * r), m(mt), area(4 * M_PI *r *r) {}
     bool intersect(const Ray& ray) {
         // analytic solution
@@ -27,8 +27,7 @@ public:
         if (t0 < 0) return false;
         return true;
     }
-    bool intersect(const Ray& ray, float &tnear, uint32_t &index) const
-    {
+    bool intersect(const Ray& ray, float &tnear, uint32_t &index) const {
         // analytic solution
         Vector3f L = ray.origin - center;
         float a = dotProduct(ray.direction, ray.direction);

@@ -3,19 +3,25 @@
 
 void Scene::buildBVH() {
     printf(" - Generating BVH...\n\n");
-    this->bvh = new BVHAccel(objects, 1, BVHAccel::SplitMethod::NAIVE);
+    
+    std::vector<Object*> objectView;
+    objectView.reserve(objects.size());
+    for (const auto& obj : objects)
+        objectView.emplace_back(obj.get());
+
+    bvh = std::make_unique<BVHAccel>(std::move(objectView), 1, BVHAccel::SplitMethod::SAH);
 }
 
 Intersection Scene::intersect(const Ray& ray) const {
-    return this->bvh->Intersect(ray);
+    return bvh ? bvh->Intersect(ray) : Intersection{};
 }
 
 void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
     float emit_area_sum = 0.f;
 
-    for (Object* object : objects) {
-        if (object->hasEmit())  // accumulate emisstion area
-            emit_area_sum += object->getArea();
+    for (const auto& obj : objects) {
+        if (obj->hasEmit())  // accumulate emisstion area
+            emit_area_sum += obj->getArea();
     }
     if (emit_area_sum <= 0.f) {
         pos = Intersection();
@@ -24,17 +30,15 @@ void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
     }
 
     const float samplePos = sampler.randFloat() * emit_area_sum;
-    float total_emit_area = emit_area_sum;
-    emit_area_sum = 0;
+    float accumulate_emit_area = 0.f;
+    
+    for (const auto& obj : objects) {
+        if (obj->hasEmit()) {
+            accumulate_emit_area += obj->getArea();
 
-    for (Object* object : objects) {
-        if (object->hasEmit()) {
-            emit_area_sum += object->getArea();
-
-            if (samplePos <= emit_area_sum){
-                object->Sample(pos, pdf, sampler);
-                const float emitProbability = samplePos / total_emit_area;
-                pdf *= emitProbability;
+            if (samplePos <= accumulate_emit_area){
+                obj->Sample(pos, pdf, sampler);
+                pdf *= obj->getArea() / emit_area_sum;
                 return;
             }
         }
