@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -146,10 +146,14 @@
     <ClInclude Include="AreaLight.hpp" />
     <ClInclude Include="Bounds3.hpp" />
     <ClInclude Include="BVH.hpp" />
+    <ClInclude Include="Camera.hpp" />
     <ClInclude Include="global.hpp" />
+    <ClInclude Include="Integrator.hpp" />
     <ClInclude Include="Intersection.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="Material.hpp" />
+    <ClInclude Include="PathTracingIntegrator.hpp" />
+    <ClInclude Include="RenderSettings.hpp" />
     <ClInclude Include="SingletLens.h" />
     <ClInclude Include="Object.hpp" />
     <ClInclude Include="OBJ_Loader.hpp" />
@@ -162,7 +166,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BVH.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PathTracingIntegrator.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Vector.cpp" />

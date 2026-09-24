@@ -11,8 +11,7 @@
 
 bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
                           const Vector3f& v2, const Vector3f& orig,
-                          const Vector3f& dir, float& tnear, float& u, float& v)
-{
+                          const Vector3f& dir, float& tnear, float& u, float& v) {
     Vector3f edge1 = v1 - v0;
     Vector3f edge2 = v2 - v0;
     Vector3f pvec = crossProduct(dir, edge2);

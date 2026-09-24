@@ -8,15 +8,28 @@
 #include <atomic>
 
 #include "SingletLens.h"
+#include "RenderSettings.hpp"
+#include "Camera.hpp"
+#include "PathTracingIntegrator.hpp"
 
 // In the main function of the program, we create the scene (create objects and
 // lights) as well as set the options for the render (image width and height,
 // maximum recursion depth, field-of-view, etc.). We then call the render
 // function().
 int main(int argc, char** argv) {
+    RenderSettings setting;     // Import Render Settings
 
-    // Change the definition here to change resolution
-    Scene scene(400, 400);
+    const float aspectRatio =   // aspect ratio
+        static_cast<float>(setting.width) / static_cast<float>(setting.height);
+
+    Camera camera(
+        Vector3f(278.0f, 273.0f, -800.0f),  // position
+        Vector3f(278.0f, 273.0f, 0.0f),     // target
+        Vector3f(0.0f, 1.0f, 0.0f),         // upward
+        static_cast<float>(setting.fov),    // fov
+        aspectRatio);                       // aspect ratio
+
+    Scene scene;  // Create scene
 
     Material* red = new Material(DIFFUSE, Vector3f(0.0f));
     red->Kd = Vector3f(0.63f, 0.065f, 0.05f);
@@ -40,22 +53,6 @@ int main(int argc, char** argv) {
     lensMaterial->Kd = Vector3f(0.55f, 0.82f, 0.95f);
     lensMaterial->Ks = Vector3f(0.92f, 0.97f, 1.0f);
     lensMaterial->ior = 1.52f;
-
-    Vector3f lensCenter(340.f, 420.f, 315.f);
-    const float lensTiltXRadians = 90.f * M_PI / 180.f;
-    const float lensTiltYRadians = 0.f;
-    SingletLens* lens = new SingletLens(
-        lensCenter,    // center
-        110.f,         // radius of curvature
-        42.f,          // center thickness
-        50.f,          // aperture radius
-        lensMaterial,
-        lensTiltXRadians,
-        lensTiltYRadians);
-
-    // Temporarily keep the lens out of the scene.
-    // scene.Add(lens);
-    // =========================================================
 
     // Transparent sphere centered in the camera view and clear of the boxes.
     Material* sphereMaterial = new Material(DIELECTRIC);
@@ -82,10 +79,11 @@ int main(int argc, char** argv) {
 
     scene.buildBVH();
 
-    Renderer r;
+    Renderer FloydRender;
+    PathTracingIntegrator integrator1(setting);
 
     auto start = std::chrono::system_clock::now();
-    r.Render(scene);
+    FloydRender.Render(scene, camera, integrator1, setting);
     auto stop = std::chrono::system_clock::now();
 
     std::cout << "Render complete: \n";

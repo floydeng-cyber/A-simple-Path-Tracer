@@ -1,9 +1,4 @@
-﻿//
-// Created by Göksu Güvendiren on 2019-05-14.
-//
-
-#pragma once
-
+﻿#pragma once
 #include <vector>
 #include "Vector.hpp"
 #include "Object.hpp"
@@ -12,19 +7,11 @@
 #include "BVH.hpp"
 #include "Ray.hpp"
 
-
-class Scene
-{
+class Scene {
 public:
-    // setting up options
-    int width = 1280;
-    int height = 960;
-    double fov = 40;
     Vector3f backgroundColor = Vector3f(0.235294, 0.67451, 0.843137);
-    int maxDepth = 1;
-    float RussianRoulette = 0.8;
-
-    Scene(int w, int h) : width(w), height(h) {}
+    
+    Scene() = default;
 
     void Add(Object *object) { objects.push_back(object); }
     void Add(std::unique_ptr<Light> light) { lights.push_back(std::move(light)); }
@@ -34,7 +21,6 @@ public:
     Intersection intersect(const Ray& ray) const;
     BVHAccel *bvh;
     void buildBVH();
-    Vector3f castRay(const Ray &ray, int depth) const;
     void sampleLight(Intersection &pos, float &pdf) const;
     bool trace(const Ray &ray, const std::vector<Object*> &objects, float &tNear, uint32_t &index, Object **hitObject);
     std::tuple<Vector3f, Vector3f> HandleAreaLight(const AreaLight &light, const Vector3f &hitPoint, const Vector3f &N,
@@ -47,12 +33,9 @@ public:
     std::vector<std::unique_ptr<Light> > lights;
 
     // Compute reflection direction
-    Vector3f reflect(const Vector3f &I, const Vector3f &N) const
-    {
+    Vector3f reflect(const Vector3f &I, const Vector3f &N) const {
         return I - 2 * dotProduct(I, N) * N;
     }
-
-
 
 // Compute refraction direction using Snell's law
 //
@@ -76,8 +59,6 @@ public:
         return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
     }
 
-
-
     // Compute Fresnel equation
 //
 // \param I is the incident view direction
@@ -87,8 +68,7 @@ public:
 // \param ior is the material refractive index
 //
 // \param[out] kr is the amount of light reflected
-    void fresnel(const Vector3f &I, const Vector3f &N, const float &ior, float &kr) const
-    {
+    void fresnel(const Vector3f& I, const Vector3f& N, const float& ior, float& kr) const {
         float cosi = clamp(-1, 1, dotProduct(I, N));
         float etai = 1, etat = ior;
         if (cosi > 0) {  std::swap(etai, etat); }
