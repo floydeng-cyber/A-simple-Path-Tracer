@@ -1,12 +1,8 @@
-//
-// Created by LEI XU on 5/16/19.
-//
-
-#ifndef RAYTRACING_RAY_H
-#define RAYTRACING_RAY_H
+﻿#pragma once
 #include "Vector.hpp"
+
 struct Ray{
-    //Destination = origin + t*direction
+    // Destination = origin + t*direction
     Vector3f origin;
     Vector3f direction, direction_inv;
     double t;//transportation time,
@@ -26,4 +22,3 @@ struct Ray{
         return os;
     }
 };
-#endif //RAYTRACING_RAY_H

@@ -245,7 +245,15 @@ Vector3f PhotonMappingIntegrator::radiance(
     const Intersection hit = scene.intersect(ray);
     if (!hit.happened || hit.m == nullptr) return Vector3f(0.f);
 
-    if (hit.m->hasEmission()) return hit.m->getEmission();
+    if (hit.m->hasEmission()) {
+        const Vector3f emission = hit.m->getEmission();
+        if (depth > 0) return emission;
+
+        return Vector3f(
+            clamp(0.f, 1.f, emission.x),
+            clamp(0.f, 1.f, emission.y),
+            clamp(0.f, 1.f, emission.z));
+    }
 
     const Vector3f hitPoint = hit.coords;
     const Vector3f normal = hit.normal;

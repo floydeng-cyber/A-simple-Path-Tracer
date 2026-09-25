@@ -20,17 +20,14 @@ int main() {
 
     RenderSettings settings;
 
-    const float aspectRatio =
-        static_cast<float>(settings.width) /
-        static_cast<float>(settings.height);
     Camera camera(
         Vector3f(278.0f, 273.0f, -800.0f),
         Vector3f(278.0f, 273.0f, 0.0f),
         Vector3f(0.0f, 1.0f, 0.0f),
-        static_cast<float>(settings.fov),
-        aspectRatio);
+        settings.fov,
+        settings.AspectRatio);
 
-    const auto sceneStart = Clock::now();
+    const auto sceneStart = Clock::now();   // timer starts
     Scene scene;
 
     Material& red = scene.createMaterial(DIFFUSE);
