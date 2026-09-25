@@ -62,11 +62,8 @@ public:
     Intersection getIntersection(Ray ray) override;
     void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
                               const uint32_t& index, const Vector2f& uv,
-                              Vector3f& N, Vector2f& st) const override
-    {
+                              Vector3f& N, Vector2f& st) const override {
         N = normal;
-        //        throw std::runtime_error("triangle::getSurfaceProperties not
-        //        implemented.");
     }
     Vector3f evalDiffuseColor(const Vector2f&) const override;
     Bounds3 getBounds() override;
@@ -139,8 +136,7 @@ public:
 
     bool intersect(const Ray& ray) { return true; }
 
-    bool intersect(const Ray& ray, float& tnear, uint32_t& index) const
-    {
+    bool intersect(const Ray& ray, float& tnear, uint32_t& index) const {
         bool intersect = false;
         for (uint32_t k = 0; k < numTriangles; ++k) {
             const Vector3f& v0 = vertices[vertexIndex[k * 3]];
@@ -163,8 +159,7 @@ public:
 
     void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
                               const uint32_t& index, const Vector2f& uv,
-                              Vector3f& N, Vector2f& st) const
-    {
+                              Vector3f& N, Vector2f& st) const {
         const Vector3f& v0 = vertices[vertexIndex[index * 3]];
         const Vector3f& v1 = vertices[vertexIndex[index * 3 + 1]];
         const Vector3f& v2 = vertices[vertexIndex[index * 3 + 2]];
@@ -177,8 +172,7 @@ public:
         st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
     }
 
-    Vector3f evalDiffuseColor(const Vector2f& st) const
-    {
+    Vector3f evalDiffuseColor(const Vector2f& st) const {
         float scale = 5;
         float pattern =
             (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
@@ -186,8 +180,7 @@ public:
                     Vector3f(0.937, 0.937, 0.231), pattern);
     }
 
-    Intersection getIntersection(Ray ray)
-    {
+    Intersection getIntersection(Ray ray) {
         Intersection intersec;
 
         if (bvh) {
@@ -197,14 +190,14 @@ public:
         return intersec;
     }
     
-    void Sample(Intersection& pos, float& pdf, Sampler& sampler){
+    void Sample(Intersection& pos, float& pdf, Sampler& sampler) {
         bvh->Sample(pos, pdf, sampler);
         pos.emit = m->getEmission();
     }
-    float getArea(){
+    float getArea() {
         return area;
     }
-    bool hasEmit(){
+    bool hasEmit() {
         return m->hasEmission();
     }
 
@@ -223,8 +216,7 @@ public:
 
 inline bool Triangle::intersect(const Ray& ray) { return true; }
 inline bool Triangle::intersect(const Ray& ray, float& tnear,
-                                uint32_t& index) const
-{
+                                uint32_t& index) const {
     return false;
 }
 
@@ -254,7 +246,7 @@ inline Intersection Triangle::getIntersection(Ray ray) {
 
     if (t_tmp < 0) return inter;
 
-    // TODO find ray triangle intersection
+    // find ray triangle intersection
 
     inter.happened = true;
     inter.coords = ray(t_tmp);
@@ -266,7 +258,6 @@ inline Intersection Triangle::getIntersection(Ray ray) {
     return inter;
 }
 
-inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
-{
+inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const {
     return Vector3f(0.5, 0.5, 0.5);
 }

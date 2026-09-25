@@ -1,17 +1,29 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="App">
+      <UniqueIdentifier>{8A362408-8D0D-4F3A-8A24-42B1C03B9871}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="Core">
+      <UniqueIdentifier>{58A7B409-750D-4AB7-B79B-75B198158729}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Scene">
+      <UniqueIdentifier>{CD3D1A91-A5BF-4A21-8EFF-2303D486E420}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Geometry">
+      <UniqueIdentifier>{7C993BF5-2DB9-449D-84EB-D66B52B808A5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{B99E00C9-B0D7-418A-BC9E-E0703A984D65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Acceleration">
+      <UniqueIdentifier>{E7421DF0-99D0-4B55-A18F-D3E4DD1D39E6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{58EF0686-D127-4EA4-BA23-9F54E8413C9D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Rendering\Integrators">
+      <UniqueIdentifier>{7B648819-BF27-436B-B92E-3CB9D90DD9CE}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -19,91 +31,97 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AreaLight.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\core\Bounds3.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Bounds3.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\core\global.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="BVH.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\core\Ray.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="global.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\core\RenderSettings.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Intersection.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\core\Sampler.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Light.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\core\Vector.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Material.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\scene\AreaLight.hpp">
+      <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="OBJ_Loader.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\scene\Intersection.hpp">
+      <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Object.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\scene\Light.hpp">
+      <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Ray.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\scene\Material.hpp">
+      <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\scene\Scene.hpp">
+      <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Scene.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\geometry\Object.hpp">
+      <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Sphere.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\geometry\Sphere.hpp">
+      <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Triangle.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\geometry\Triangle.hpp">
+      <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Vector.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\OBJ_Loader.hpp">
+      <Filter>External</Filter>
     </ClInclude>
-    <ClInclude Include="RenderSettings.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\acceleration\BVH.hpp">
+      <Filter>Acceleration</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\rendering\Camera.hpp">
+      <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Integrator.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\rendering\Renderer.hpp">
+      <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="PathTracingIntegrator.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\rendering\integrators\Integrator.hpp">
+      <Filter>Rendering\Integrators</Filter>
     </ClInclude>
-    <ClInclude Include="Sampler.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\rendering\integrators\HybridIntegrator.hpp">
+      <Filter>Rendering\Integrators</Filter>
     </ClInclude>
-    <ClInclude Include="PhotonMappingIntegrator.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\rendering\integrators\PathTracingIntegrator.hpp">
+      <Filter>Rendering\Integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\integrators\PhotonMappingIntegrator.hpp">
+      <Filter>Rendering\Integrators</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BVH.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\main.cpp">
+      <Filter>App</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\scene\Scene.cpp">
+      <Filter>Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\acceleration\BVH.cpp">
+      <Filter>Acceleration</Filter>
     </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\rendering\Camera.cpp">
+      <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\rendering\Renderer.cpp">
+      <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="PathTracingIntegrator.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\rendering\integrators\HybridIntegrator.cpp">
+      <Filter>Rendering\Integrators</Filter>
     </ClCompile>
-    <ClCompile Include="PhotonMappingIntegrator.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\rendering\integrators\PathTracingIntegrator.cpp">
+      <Filter>Rendering\Integrators</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\integrators\PhotonMappingIntegrator.cpp">
+      <Filter>Rendering\Integrators</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

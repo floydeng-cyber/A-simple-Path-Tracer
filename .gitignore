@@ -14,7 +14,6 @@ x64/
 x86/
 [Oo]bj/
 [Bb]in/
-*.obj
 *.pdb
 *.ilk
 *.ipch
@@ -45,7 +44,7 @@ compile_commands.json
 cornellBox.ppm
 binary.ppm
 output*.ppm
-renders/
+render_img/
 
 # Editor and operating-system files
 .vscode/
