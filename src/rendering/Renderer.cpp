@@ -1,129 +1,117 @@
-﻿#include "Renderer.hpp"
+﻿#include "Renderer.hpp" // Renderer declarations.
 
-#include <algorithm>
-#include <atomic>
-#include <chrono>
-#include <cmath>
-#include <condition_variable>
-#include <cstdio>
-#include <filesystem>
-#include <iostream>
-#include <mutex>
-#include <stdexcept>
-#include <thread>
-#include <vector>
+#include <algorithm> // std::max.
+#include <atomic> // Thread-safe progress counter.
+#include <chrono> // Timing and progress interval.
+#include <cmath> // std::pow.
+#include <cstdio> // PPM file output.
+#include <filesystem> // Output directory creation.
+#include <iostream> // Console output.
+#include <stdexcept> // File error reporting.
+#include <thread> // Worker threads.
+#include <vector> // Framebuffer and thread storage.
 
-#include "Sampler.hpp"
-#include "Scene.hpp"
+#include "Sampler.hpp" // Random sampling.
+#include "Scene.hpp" // Scene data.
 
-const float EPSILON = 1e-5f;
+const float EPSILON = 1e-5f; // Shared ray-offset tolerance.
 
-RenderStats Renderer::Render(
-    const Scene& scene,
-    const Camera& camera,
-    const Integrator& integrator,
-    const RenderSettings& setting) {
+RenderStats Renderer::Render( // Renders the scene and returns timing data.
+    const Scene& scene, // Scene to render.
+    const Camera& camera, // Camera used to create rays.
+    const Integrator& integrator, // Light-transport implementation.
+    const RenderSettings& setting) { // Render configuration.
 
-    using Clock = std::chrono::steady_clock;
+    using Clock = std::chrono::steady_clock; // Monotonic timer.
 
-    std::vector<Vector3f> framebuffer(setting.width * setting.height);
-    const int spp = setting.SPP;
-    std::cout << "SPP: " << spp << "\n";
+    std::vector<Vector3f> framebuffer(setting.width * setting.height); // Pixel colors.
+    const float sampleWeight = 1.f / static_cast<float>(setting.SPP); // Weight of one sample.
+    std::cout << "SPP: " << setting.SPP << "\n"; // Print sample count.
 
-    const int threadCount = (setting.threadCount > 0)
-        ? std::max(1, setting.threadCount)
-        : static_cast<int>(std::max(1u, std::thread::hardware_concurrency()));
-    std::vector<std::thread> threads(threadCount);
+    const int threadCount = setting.threadCount > 0 // Use requested threads when provided.
+        ? setting.threadCount // Explicit thread count.
+        : static_cast<int>(std::max(1u, std::thread::hardware_concurrency())); // Otherwise use the CPU count.
 
-    std::atomic<int> completedRows = 0;
-    std::condition_variable progressChanged;
-    std::mutex progressMutex;
+    std::atomic<int> completedRows{0}; // Rows completed by all workers.
+    const auto integrationStart = Clock::now(); // Start integration timer.
 
-    const auto integrationStart = Clock::now();
+    auto renderRows = [&](int firstRow) { // Each worker renders every threadCount-th row.
+        for (int j = firstRow; j < setting.height; j += threadCount) { // Visit this worker's rows.
+            for (int i = 0; i < setting.width; ++i) { // Visit each pixel in the row.
+                const int frameIndex = j * setting.width + i; // Convert 2D position to array index.
 
-    auto renderRows = [&](int startY, int endY) {
-        for (int j = startY; j < endY; ++j) {
-            for (int i = 0; i < setting.width; ++i) {
-                const int frameIndex = j * setting.width + i;
-                const float inverseSpp = 1.f / static_cast<float>(spp);
+                for (int sampleIndex = 0; sampleIndex < setting.SPP; ++sampleIndex) { // Trace all pixel samples.
+                    Sampler sampler(Sampler::makeSeed( // Create a repeatable sample generator.
+                        setting.randSeed, // Global seed.
+                        static_cast<std::uint64_t>(frameIndex), // Pixel seed component.
+                        static_cast<std::uint64_t>(sampleIndex))); // Sample seed component.
 
-                for (int sampleIndex = 0; sampleIndex < spp; ++sampleIndex) {
-                    Sampler sampler(Sampler::makeSeed(
-                        setting.randSeed,
-                        static_cast<std::uint64_t>(frameIndex),
-                        static_cast<std::uint64_t>(sampleIndex)));
+                    const Vector2f deviation = sampler.rand2D(); // Random subpixel offset.
+                    const float normalizedX = // Horizontal camera coordinate.
+                        (static_cast<float>(i) + deviation.x) / setting.width; // Normalize jittered x.
+                    const float normalizedY = // Vertical camera coordinate.
+                        (static_cast<float>(j) + deviation.y) / setting.height; // Normalize jittered y.
+                    const Ray primaryRay = camera.generateRay(normalizedX, normalizedY); // Create camera ray.
 
-                    const Vector2f deviation = sampler.rand2D();
-                    const float normalizedX =
-                        (static_cast<float>(i) + deviation.x) /
-                        static_cast<float>(setting.width);
-                    const float normalizedY =
-                        (static_cast<float>(j) + deviation.y) /
-                        static_cast<float>(setting.height);
-                    const Ray primaryRay = camera.generateRay(
-                        normalizedX, normalizedY);
+                    framebuffer[frameIndex] += // Accumulate the averaged sample.
+                        integrator.radiance(primaryRay, scene, sampler, 0) * sampleWeight; // Evaluate radiance.
+                } // End sample loop.
+            } // End pixel loop.
 
-                    framebuffer[frameIndex] += integrator.radiance(
-                        primaryRay, scene, sampler, 0) * inverseSpp;
-                }
-            }
+            ++completedRows; // Record the finished row.
+        } // End row loop.
+    }; // End worker function.
 
-            const int rowsDone = ++completedRows;
-            if (rowsDone == setting.height)
-                progressChanged.notify_one();
-        }
-    };
+    std::vector<std::thread> threads; // Worker collection.
+    threads.reserve(threadCount); // Avoid vector reallocations.
+    for (int threadIndex = 0; threadIndex < threadCount; ++threadIndex) { // Start each worker.
+        threads.emplace_back(renderRows, threadIndex); // Construct the thread directly in the vector.
+    } // End worker-start loop.
 
-    const int rowsPerThread = setting.height / threadCount;
-    for (int threadIndex = 0; threadIndex < threadCount; ++threadIndex) {
-        const int startY = threadIndex * rowsPerThread;
-        const int endY = (threadIndex == threadCount - 1)
-            ? setting.height
-            : startY + rowsPerThread;
-        threads[threadIndex] = std::thread(renderRows, startY, endY);
-    }
+    while (completedRows.load() < setting.height) { // Update progress until rendering finishes.
+        UpdateProgress(completedRows.load() / static_cast<float>(setting.height)); // Show completion fraction.
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Refresh per second.
+    } // End progress loop.
 
-    while (completedRows < setting.height) {
-        std::unique_lock<std::mutex> lock(progressMutex);
-        progressChanged.wait_for(
-            lock,
-            std::chrono::milliseconds(100),
-            [&] { return completedRows.load() >= setting.height; });
-        UpdateProgress(
-            completedRows.load() / static_cast<float>(setting.height));
-    }
+    for (std::thread& worker : threads) { // Visit every worker.
+        worker.join(); // Wait for it to finish.
+    } // End join loop.
 
-    for (std::thread& worker : threads)
-        worker.join();
+    UpdateProgress(1.f); // Show 100%.
+    std::cout << "\n"; // Finish the progress line.
+    const auto integrationEnd = Clock::now(); // Stop integration timer.
 
-    UpdateProgress(1.f);
-    std::cout << "\n";
-    const auto integrationEnd = Clock::now();
+    const auto imageWriteStart = Clock::now(); // Start output timer.
 
-    const auto imageWriteStart = Clock::now();
-    const std::filesystem::path outputPath(setting.outputFile);
-    if (outputPath.has_parent_path())
-        std::filesystem::create_directories(outputPath.parent_path());
+    const std::filesystem::path outputPath(setting.outputFile); // Parse output path.
+    if (outputPath.has_parent_path()) { // Check for an output directory.
+        std::filesystem::create_directories(outputPath.parent_path()); // Create it when needed.
+    } // End directory check.
 
-    FILE* output = nullptr;
-    fopen_s(&output, setting.outputFile.c_str(), "wb");
-    if (output == nullptr)
-        throw std::runtime_error("Unable to open render output: " + setting.outputFile);
+    FILE* output = nullptr; // Output file handle.
+    fopen_s(&output, setting.outputFile.c_str(), "wb"); // Open binary output.
+    if (output == nullptr) { // Check for open failure.
+        throw std::runtime_error("Unable to open render output: " + setting.outputFile); // Report the failed path.
+    } // End error check.
 
-    std::fprintf(output, "P6\n%d %d\n255\n", setting.width, setting.height);
-    for (const Vector3f& pixel : framebuffer) {
-        const unsigned char color[3] = {
-            static_cast<unsigned char>(255 * std::pow(clamp(0, 1, pixel.x), 0.6f)),
-            static_cast<unsigned char>(255 * std::pow(clamp(0, 1, pixel.y), 0.6f)),
-            static_cast<unsigned char>(255 * std::pow(clamp(0, 1, pixel.z), 0.6f))
-        };
-        std::fwrite(color, 1, 3, output);
-    }
-    std::fclose(output);
-    const auto imageWriteEnd = Clock::now();
+    std::fprintf(output, "P6\n%d %d\n255\n", setting.width, setting.height); // Write PPM header.
+    const auto toByte = [](float value) { // Convert a color channel to a display byte.
+        return static_cast<unsigned char>( // Convert the result to 0-255 storage.
+            255 * std::pow(clamp(0, 1, value), 0.6f)); // Clamp, gamma-correct, and scale.
+    }; // End channel converter.
 
-    return RenderStats{
-        std::chrono::duration<double>(integrationEnd - integrationStart).count(),
-        std::chrono::duration<double>(imageWriteEnd - imageWriteStart).count()
-    };
-}
+    for (const Vector3f& pixel : framebuffer) { // Write each pixel.
+        const unsigned char color[3] = { // RGB byte triplet.
+            toByte(pixel.x), toByte(pixel.y), toByte(pixel.z) // Convert all channels.
+        }; // End RGB array.
+        std::fwrite(color, 1, 3, output); // Write three bytes.
+    } // End pixel-write loop.
+
+    std::fclose(output); // Close output file.
+    const auto imageWriteEnd = Clock::now(); // Stop output timer.
+
+    return RenderStats{ // Return elapsed times.
+        std::chrono::duration<double>(integrationEnd - integrationStart).count(), // Integration seconds.
+        std::chrono::duration<double>(imageWriteEnd - imageWriteStart).count() // Output seconds.
+    }; // End result.
+} // End render function.
