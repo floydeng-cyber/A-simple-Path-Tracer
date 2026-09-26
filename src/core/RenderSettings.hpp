@@ -21,10 +21,10 @@ inline const char* renderModeName(RenderMode mode) {
 struct RenderSettings {
 	// Independent Setting Parameters
 	RenderMode renderMode = RenderMode::Hybrid;
-	int		width  = 800;		// Image width  [pixel]
-	int		height = 800;		// Image height [pixel]
-	int		SPP	   = 400;		// Sample Per Pixel
-	int		MaxDepth = 8;		// Max.# of light ray bounce
+	int		width  = 500;		// Image width  [pixel]
+	int		height = 500;		// Image height [pixel]
+	int		SPP	   = 100;		// Sample Per Pixel
+	int		MaxDepth = 10;		// Max.# of light ray bounce
 	float	rusRoulette = 0.8f;	// Russian Roulette for light bouncing
 	int		threadCount = 0;	// # of threads (default = 0 = hardware_concurrency)
 	float	fov = 40;			// vertical field of view

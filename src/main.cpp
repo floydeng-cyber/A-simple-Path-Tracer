@@ -55,14 +55,17 @@ int main() {
     Material& sphereMaterial = scene.createMaterial(DIELECTRIC);
     sphereMaterial.Ks = Vector3f(1.0f);
     sphereMaterial.ior = 1.52f;
-    scene.addObj<Sphere>(
-        Vector3f(278.f, 273.f, 170.f),
-        65.f,
-        &sphereMaterial);
+    MeshTriangleOptions transparentMeshOptions;
+    transparentMeshOptions.is2sided = true;
+    transparentMeshOptions.smoothShading = true;
+    scene.addObj<MeshTriangle>(
+        "assets/models/complexSpheres.obj",
+        &sphereMaterial,
+        transparentMeshOptions);
 
     scene.addObj<MeshTriangle>("assets/models/cornellbox/floor.obj", &white);
-    scene.addObj<MeshTriangle>("assets/models/cornellbox/shortbox.obj", &white);
-    scene.addObj<MeshTriangle>("assets/models/cornellbox/tallbox.obj", &white);
+    //scene.addObj<MeshTriangle>("assets/models/cornellbox/shortbox.obj", &white);
+    //scene.addObj<MeshTriangle>("assets/models/cornellbox/tallbox.obj", &white);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/left.obj", &red);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/right.obj", &green);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/light.obj", &light);
