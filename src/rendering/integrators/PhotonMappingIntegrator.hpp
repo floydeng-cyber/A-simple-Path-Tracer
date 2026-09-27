@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstddef>
 #include <vector>
@@ -30,7 +30,7 @@ public:
     Vector3f estimateIrradiance(
         const Vector3f& position,
         const Vector3f& normal,
-        float radius) const;
+        float radius, bool coneFilter = true) const;
 
     std::size_t size() const { return photons.size(); }
 
@@ -43,6 +43,7 @@ private:
         const Vector3f& position,
         const Vector3f& normal,
         float radiusSquared,
+        bool coneFilter,
         Vector3f& powerSum) const;
 
     std::vector<Photon> photons;
@@ -64,9 +65,6 @@ public:
 
     Vector3f estimateCaustic(const Intersection& hit) const;
     Vector3f estimateGlobal(const Intersection& hit) const;
-
-    std::size_t storedCausticPhotonCount() const { return causticMap.size(); }
-    std::size_t storedGlobalPhotonCount() const { return globalMap.size(); }
 
 private:
     void tracePhoton(

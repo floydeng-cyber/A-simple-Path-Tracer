@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 
 #include "Camera.hpp"
 #include "HybridIntegrator.hpp"
@@ -44,20 +45,20 @@ int main() {
         47.f * Vector3f(1.f, 0.8f, 0.6f));
     light.Kd = Vector3f(0.65f);
 
-    Material& glossy = scene.createMaterial(MICROFACET);
-    glossy.Kd = Vector3f(0.6f, 0.2f, 0.1f);
-    glossy.F0 = Vector3f(0.04f);
-    glossy.roughness = 0.25f;
+    //Material& glossy = scene.createMaterial(MICROFACET);
+    //glossy.Kd = Vector3f(0.6f, 0.2f, 0.1f);
+    //glossy.F0 = Vector3f(0.04f);
+    //glossy.roughness = 0.25f;
 
-    Material& mirror = scene.createMaterial(MIRROR);
-    mirror.Ks = Vector3f(0.95f);
+    //Material& mirror = scene.createMaterial(MIRROR);
+    //mirror.Ks = Vector3f(0.95f);
 
     Material& sphereMaterial = scene.createMaterial(DIELECTRIC);
     sphereMaterial.Ks = Vector3f(1.0f);
     sphereMaterial.ior = 1.52f;
     MeshTriangleOptions transparentMeshOptions;
     transparentMeshOptions.is2sided = true;
-    transparentMeshOptions.smoothShading = true;
+    transparentMeshOptions.smoothShading = settings.smoothMesh;
     scene.addObj<MeshTriangle>(
         "assets/models/complexSpheres.obj",
         &sphereMaterial,
@@ -87,7 +88,7 @@ int main() {
     }
 
     const auto preprocessStart = Clock::now();
-    Sampler preprocessSampler(settings.randSeed ^ 0xd1b54a32d192ed03ULL);
+    Sampler preprocessSampler(settings.photonSeed);
     integrator->preProcess(scene, preprocessSampler);
     const auto preprocessEnd = Clock::now();
 

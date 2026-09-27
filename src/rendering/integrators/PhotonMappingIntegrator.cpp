@@ -54,7 +54,7 @@ void PhotonMap::balanceRange(std::size_t begin, std::size_t end, int depth) {
 Vector3f PhotonMap::estimateIrradiance(
     const Vector3f& position,
     const Vector3f& normal,
-    float radius) const {
+    float radius, bool coneFilter) const {
 
     if (photons.empty() || radius <= 0.f) return Vector3f(0.f);
 
@@ -67,9 +67,11 @@ Vector3f PhotonMap::estimateIrradiance(
         position,
         normalize(normal),
         radiusSquared,
+        coneFilter,
         powerSum);
 
-    return powerSum / (M_PI * radiusSquared);
+    // Cone kernel w(d)=1-d/r integrates to pi*r^2/3 on a plane.
+    return powerSum * ((coneFilter ? 3.f : 1.f) / (M_PI * radiusSquared));
 }
 
 void PhotonMap::gatherRange(
@@ -79,6 +81,7 @@ void PhotonMap::gatherRange(
     const Vector3f& position,
     const Vector3f& normal,
     float radiusSquared,
+    bool coneFilter,
     Vector3f& powerSum) const {
 
     if (begin >= end) return;
@@ -91,7 +94,7 @@ void PhotonMap::gatherRange(
     if (distanceSquared <= radiusSquared &&
         dotProduct(normal, photon.normal) > 0.85f &&
         dotProduct(normal, photon.incoming) > 0.f) {
-        powerSum += photon.power;
+        powerSum += photon.power * (coneFilter ? 1.f - std::sqrt(distanceSquared / radiusSquared) : 1.f);
     }
 
     const int axis = depth % 3;
@@ -100,17 +103,17 @@ void PhotonMap::gatherRange(
 
     if (axisDistance <= 0.f) {
         gatherRange(begin, middle, depth + 1, position, normal,
-                    radiusSquared, powerSum);
+                    radiusSquared, coneFilter, powerSum);
         if (axisDistance * axisDistance <= radiusSquared) {
             gatherRange(middle + 1, end, depth + 1, position, normal,
-                        radiusSquared, powerSum);
+                        radiusSquared, coneFilter, powerSum);
         }
     } else {
         gatherRange(middle + 1, end, depth + 1, position, normal,
-                    radiusSquared, powerSum);
+                    radiusSquared, coneFilter, powerSum);
         if (axisDistance * axisDistance <= radiusSquared) {
             gatherRange(begin, middle, depth + 1, position, normal,
-                        radiusSquared, powerSum);
+                        radiusSquared, coneFilter, powerSum);
         }
     }
 }
@@ -137,7 +140,7 @@ void PhotonMappingIntegrator::preProcess(const Scene& scene, Sampler& sampler) {
         if (!emission.isValid()) continue;
 
         tracePhoton(
-            Ray(emission.position + emission.direction * EPSILON,
+            Ray(emission.position,
                 emission.direction),
             emission.power,
             scene,
@@ -165,7 +168,7 @@ void PhotonMappingIntegrator::tracePhoton(
     bool hadDiffuseBounce) {
 
     if (depth >= settings.photonMaxDepth ||
-        maxComponent(power) <= EPSILON) {
+        maxComponent(power) <= 0.f) {
         return;
     }
 
@@ -197,7 +200,8 @@ void PhotonMappingIntegrator::tracePhoton(
 
         if (sampler.randFloat() > settings.rusRoulette) return;
 
-        const BSDFSample scattering = hit.m->sample(incoming, hit.normal, sampler);
+        const BSDFSample scattering = hit.m->sampleSurface(incoming, hit.normal,
+            hit.geometricNormal, sampler, TransportMode::Importance);
         if (!scattering.isValid()) return;
 
         const Vector3f nextPower = power
@@ -205,7 +209,7 @@ void PhotonMappingIntegrator::tracePhoton(
                                  / settings.rusRoulette;
 
         tracePhoton(
-            Ray(hit.coords + hit.normal * EPSILON, scattering.direction),
+            Ray(offsetRayOrigin(hit, scattering.direction), scattering.direction),
             nextPower,
             scene,
             sampler,
@@ -215,17 +219,14 @@ void PhotonMappingIntegrator::tracePhoton(
         return;
     }
 
-    const BSDFSample scattering = hit.m->sample(incoming, hit.normal, sampler);
+    const BSDFSample scattering = hit.m->sampleSurface(incoming, hit.normal,
+        hit.geometricNormal, sampler, TransportMode::Importance);
     if (!scattering.isValid()) return;
 
     const Vector3f nextPower = power * scattering.weight;
-    const Vector3f offsetNormal =
-        dotProduct(scattering.direction, hit.normal) >= 0.f
-        ? hit.normal
-        : -hit.normal;
 
     tracePhoton(
-        Ray(hit.coords + offsetNormal * EPSILON, scattering.direction),
+        Ray(offsetRayOrigin(hit, scattering.direction), scattering.direction),
         nextPower,
         scene,
         sampler,
@@ -245,31 +246,31 @@ Vector3f PhotonMappingIntegrator::radiance(
     const Intersection hit = scene.intersect(ray);
     if (!hit.happened || hit.m == nullptr) return Vector3f(0.f);
 
-    if (hit.m->hasEmission()) {
-        const Vector3f emission = hit.m->getEmission();
-        if (depth > 0) return emission;
-
-        return Vector3f(
-            clamp(0.f, 1.f, emission.x),
-            clamp(0.f, 1.f, emission.y),
-            clamp(0.f, 1.f, emission.z));
-    }
+    if (hit.m->hasEmission()) return hit.m->getEmission();
 
     const Vector3f hitPoint = hit.coords;
     const Vector3f normal = hit.normal;
     const Vector3f outgoing = -ray.direction;
 
     if (hit.m->isSpecular()) {
-        const BSDFSample scattering = hit.m->sample(outgoing, normal, sampler);
+        if (hit.m->getType() == DIELECTRIC && depth < settings.specularSplitDepth) {
+            const auto branches = hit.m->dielectricBranches(outgoing, normal,
+                hit.geometricNormal, TransportMode::Radiance);
+            Vector3f result(0.f);
+            for (const auto& branch : {branches.reflection, branches.transmission}) {
+                if (branch.isValid())
+                    result += radiance(Ray(offsetRayOrigin(hit,branch.direction),branch.direction),
+                        scene,sampler,depth+1) * branch.weight;
+            }
+            return result;
+        }
+        const BSDFSample scattering = hit.m->sampleSurface(outgoing, normal,
+            hit.geometricNormal, sampler);
         if (!scattering.isValid()) return Vector3f(0.f);
 
-        const Vector3f offsetNormal =
-            dotProduct(scattering.direction, normal) >= 0.f
-            ? normal
-            : -normal;
 
         return radiance(
-            Ray(hitPoint + offsetNormal * EPSILON, scattering.direction),
+            Ray(offsetRayOrigin(hit, scattering.direction), scattering.direction),
             scene,
             sampler,
             depth + 1) * scattering.weight;
@@ -288,7 +289,7 @@ Vector3f PhotonMappingIntegrator::radiance(
             const float distance = std::sqrt(distanceSquared);
             const Vector3f lightDirection = normalize(lightOffset);
             const Intersection shadowHit = scene.intersect(
-                Ray(hitPoint + normal * EPSILON, lightDirection));
+                Ray(offsetRayOrigin(hit, lightDirection), lightDirection));
 
             const float distanceDifference = std::abs(
                 static_cast<float>(shadowHit.distance) - distance);
@@ -312,9 +313,6 @@ Vector3f PhotonMappingIntegrator::radiance(
     Vector3f result = directLight
                     + estimateGlobal(hit)
                     + estimateCaustic(hit);
-    for (int i = 0; i < 3; ++i)
-        result[i] = clamp(0, 1, result[i]);
-
     return result;
 }
 
@@ -324,7 +322,7 @@ Vector3f PhotonMappingIntegrator::estimateCaustic(
     const Vector3f irradiance = causticMap.estimateIrradiance(
         hit.coords,
         hit.normal,
-        settings.photonGatherRadius);
+        settings.photonGatherRadius, settings.photonConeFilter);
 
     return irradiance * hit.m->Kd / M_PI;
 }
@@ -335,7 +333,7 @@ Vector3f PhotonMappingIntegrator::estimateGlobal(
     const Vector3f irradiance = globalMap.estimateIrradiance(
         hit.coords,
         hit.normal,
-        settings.photonGatherRadius);
+        settings.photonGatherRadius, settings.photonConeFilter);
 
     return irradiance * hit.m->Kd / M_PI;
 }

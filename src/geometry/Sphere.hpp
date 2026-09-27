@@ -56,6 +56,11 @@ public:
 
         result.coords = Vector3f(ray.origin + ray.direction * t0);
         result.normal = normalize(Vector3f(result.coords - center));
+        result.coords = center + result.normal * radius;
+        result.geometricNormal = result.normal;
+        for (int i=0;i<3;++i)
+            result.positionError[i] = 8.f * std::numeric_limits<float>::epsilon()
+                * (std::abs(center[i]) + radius);
         result.m = this->m;
         result.obj = this;
         result.distance = t0;
@@ -101,6 +106,10 @@ public:
 
         pos.coords = center + radius * surfaceNormal;
         pos.normal = surfaceNormal;
+        pos.geometricNormal = surfaceNormal;
+        for (int i=0;i<3;++i)
+            pos.positionError[i] = 8.f * std::numeric_limits<float>::epsilon()
+                * (std::abs(center[i]) + radius);
         pos.emit = m->getEmission();
         pdf = 1.f / area;
     }

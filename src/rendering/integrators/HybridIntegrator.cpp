@@ -25,29 +25,17 @@ Vector3f HybridIntegrator::radiance(
 
     const Intersection hit = scene.intersect(ray);
     if (!hit.happened || hit.m == nullptr) return Vector3f(0.f);
-    if (hit.m->hasEmission()) {
-        const Vector3f emission = hit.m->getEmission();
-        if (depth > 0) return emission;
-
-        return Vector3f(
-            clamp(0.f, 1.f, emission.x),
-            clamp(0.f, 1.f, emission.y),
-            clamp(0.f, 1.f, emission.z));
-    }
+    if (hit.m->hasEmission()) return hit.m->getEmission();
 
     if (hit.m->isSpecular()) {
         const Vector3f outgoing = -ray.direction;
-        const BSDFSample scattering = hit.m->sample(
-            outgoing, hit.normal, sampler);
+        const BSDFSample scattering = hit.m->sampleSurface(
+            outgoing, hit.normal, hit.geometricNormal, sampler);
         if (!scattering.isValid()) return Vector3f(0.f);
 
-        const Vector3f offsetNormal =
-            dotProduct(scattering.direction, hit.normal) >= 0.f
-            ? hit.normal
-            : -hit.normal;
 
         return radiance(
-            Ray(hit.coords + offsetNormal * EPSILON, scattering.direction),
+            Ray(offsetRayOrigin(hit, scattering.direction), scattering.direction),
             scene,
             sampler,
             depth + 1) * scattering.weight;

@@ -64,6 +64,8 @@ public:
                    + v2 * (u * v);
 
         pos.normal = this->normal;
+        pos.geometricNormal = normal;
+        pos.positionError = positionErrorBound(1.f-u, u*(1.f-v), u*v);
         pos.emit = m->getEmission();
 
         pdf = 1.f / area;
@@ -74,6 +76,15 @@ public:
 
     Vector3f shadingNormal(float u, float v) const {
         return normalize(n0 * (1.f - u - v) + n1 * u + n2 * v);
+    }
+    Vector3f positionErrorBound(float a, float b, float c) const {
+        // gamma(7), for barycentric reconstruction in float (PBRT section 3.9).
+        constexpr float e = std::numeric_limits<float>::epsilon() * 0.5f;
+        constexpr float gamma7 = (7.f * e) / (1.f - 7.f * e);
+        Vector3f error;
+        for (int i=0; i<3; ++i)
+            error[i] = gamma7 * (std::abs(a*v0[i]) + std::abs(b*v1[i]) + std::abs(c*v2[i]));
+        return error;
     }
 };
 
@@ -228,13 +239,17 @@ inline Intersection Triangle::getIntersection(Ray ray) {
         return inter;
     t_tmp = dotProduct(e2, qvec) * det_inv;
 
-    if (t_tmp < 0) return inter;
+    if (t_tmp <= 0) return inter;
 
     // find ray triangle intersection
 
     inter.happened = true;
-    inter.coords = ray(t_tmp);
+    const float b1 = static_cast<float>(u), b2 = static_cast<float>(v);
+    const float b0 = 1.f - b1 - b2;
+    inter.coords = v0*b0 + v1*b1 + v2*b2;
     inter.normal = shadingNormal(static_cast<float>(u), static_cast<float>(v));
+    inter.geometricNormal = normal;
+    inter.positionError = positionErrorBound(b0, b1, b2);
     inter.distance = t_tmp;
     inter.m = m;
     inter.obj = this;

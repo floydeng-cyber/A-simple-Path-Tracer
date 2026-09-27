@@ -59,6 +59,10 @@ public:
     static Vector3f Max(const Vector3f& vec1, const Vector3f& vec2) {
         return Vector3f(std::max(vec1.x, vec2.x),std::max(vec1.y,vec2.y),std::max(vec1.z,vec2.z));
     }   // maximal value in each of 3 components
+
+    Vector3f getClamped() {
+        return Vector3f(std::min(1.f, x), std::min(1.f, y), std::min(1.f, z));
+    }
 };
 
 class Vector2f {    // 2D-version

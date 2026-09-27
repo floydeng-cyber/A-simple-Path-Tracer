@@ -36,6 +36,7 @@ Each run reports scene/BVH setup, integrator preprocessing, camera integration,
 image writing, render-pipeline total, and end-to-end wall-clock time. Photon-map
 construction is included in the render-pipeline total for fair comparisons.
 
+
 ## Layout
 
 ```text

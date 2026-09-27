@@ -85,9 +85,9 @@ PhotonEmissionSample Scene::samplePhotonEmission(
     sampleLight(lightPoint, sample.pdfArea, sampler);
     if (sample.pdfArea <= EPSILON) return sample;
 
-    sample.position = lightPoint.coords;
     sample.normal = normalize(lightPoint.normal);
     sample.direction = sampleCosineHemisphere(sample.normal, sampler);
+    sample.position = offsetRayOrigin(lightPoint, sample.direction);
 
     const float cosTheta = std::max(0.f, dotProduct(sample.normal, sample.direction));
 

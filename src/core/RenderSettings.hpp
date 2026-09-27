@@ -24,7 +24,7 @@ struct RenderSettings {
 	int		width  = 500;		// Image width  [pixel]
 	int		height = 500;		// Image height [pixel]
 	int		SPP	   = 100;		// Sample Per Pixel
-	int		MaxDepth = 10;		// Max.# of light ray bounce
+	int		MaxDepth = 32;		// Allow long internal-reflection chains.
 	float	rusRoulette = 0.8f;	// Russian Roulette for light bouncing
 	int		threadCount = 0;	// # of threads (default = 0 = hardware_concurrency)
 	float	fov = 40;			// vertical field of view
@@ -35,8 +35,12 @@ struct RenderSettings {
 	std::uint64_t randSeed = 42;	// ultimate answer of everything
 
 	std::size_t photonCount = 250000;
-	int photonMaxDepth = 8;
+	int photonMaxDepth = 32;
 	float photonGatherRadius = 30.f;
+	int specularSplitDepth = 3; // PM camera paths: trace both Fresnel branches before this depth.
+	bool photonConeFilter = true;
+	std::uint64_t photonSeed = 42 ^ 0xd1b54a32d192ed03ULL;
+	bool smoothMesh = true;
 
 	// Dependent Parameters
 	float AspectRatio = (float)width/height;	// Aspect Ratio

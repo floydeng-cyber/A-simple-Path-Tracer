@@ -37,6 +37,12 @@ enum MaterialType {
     DIELECTRIC
 };
 
+enum class TransportMode { Radiance, Importance };
+struct DielectricBranches {
+    BSDFSample reflection;
+    BSDFSample transmission;
+};
+
 class Material {
 private:
 
@@ -132,6 +138,44 @@ private:
     }
 
 public:
+    DielectricBranches dielectricBranches(const Vector3f& wi, Vector3f n,
+        const Vector3f& geometricNormal, TransportMode mode) const {
+        // Enter/exit classification must agree with the actual surface.
+        if (dotProduct(wi,n)*dotProduct(wi,geometricNormal) <= 0.f)
+            n = geometricNormal;
+        float f;
+        fresnel(-wi,n,ior,f);
+        Vector3f r = normalize(reflect(-wi,n));
+        Vector3f t = refract(-wi,n,ior);
+        // Smooth normals may send a ray through the wrong geometric hemisphere.
+        // Use the geometric interface for the entire event in that case.
+        const float side = dotProduct(wi,geometricNormal);
+        if (side*dotProduct(r,geometricNormal) <= 0.f ||
+            (f < 1.f && side*dotProduct(t,geometricNormal) >= 0.f)) {
+            n = geometricNormal;
+            fresnel(-wi,n,ior,f);
+            r = normalize(reflect(-wi,n));
+            t = refract(-wi,n,ior);
+        }
+        const float eta = side > 0.f ? 1.f/ior : ior;
+        const float transmissionScale = mode == TransportMode::Radiance ? eta*eta : 1.f;
+        return {
+            {r, Ks*f, f, ScatterEvent::Reflection},
+            {normalize(t), Ks*((1.f-f)*transmissionScale), 1.f-f, ScatterEvent::Transmission}
+        };
+    }
+
+    BSDFSample sampleSurface(const Vector3f& wi, const Vector3f& n,
+        const Vector3f& geometricNormal, Sampler& sampler,
+        TransportMode mode = TransportMode::Radiance) const {
+        if (m_type != DIELECTRIC) return sample(wi,n,sampler);
+        const auto branches = dielectricBranches(wi,n,geometricNormal,mode);
+        BSDFSample result = sampler.randFloat() < branches.reflection.pdf
+            ? branches.reflection : branches.transmission;
+        if (result.pdf > 0.f) result.weight = result.weight / result.pdf;
+        return result;
+    }
+
     float roughness = 0.5f;         // 0.05=mirror-like -> 0.8=rough
     Vector3f F0 = Vector3f(0.04f);  // Reflectance @normal-incidence
 
@@ -186,7 +230,12 @@ Vector3f Material::getColorAt(double u, double v) {
 
 BSDFSample Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& sampler) const {
     switch(m_type){
-        case DIFFUSE:
+        case DIFFUSE: {
+            const float u = sampler.randFloat(), phi = 2.f*M_PI*sampler.randFloat();
+            const float r = std::sqrt(u), z = std::sqrt(1.f-u);
+            const Vector3f direction = normalize(toWorld(Vector3f(r*std::cos(phi),r*std::sin(phi),z),N));
+            return {direction, Kd, z/M_PI, ScatterEvent::Diffuse};
+        }
         case MICROFACET: {
             // uniform sample on the hemisphere
             const float x_1 = sampler.randFloat(),
@@ -252,8 +301,8 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N) c
 
     switch(m_type){
         case DIFFUSE: {
-            // uniform sample probability 1 / (2 * PI)
-            return 0.5f / M_PI;
+            // Cosine-weighted hemisphere density.
+            return dotProduct(wo,N) / M_PI;
             break;
         }
         case MICROFACET: {

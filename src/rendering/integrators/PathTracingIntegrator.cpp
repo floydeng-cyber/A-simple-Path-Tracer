@@ -36,13 +36,10 @@ Vector3f PathTracingIntegrator::radiance(
     if (depth <= setting.MaxDepth && !hit.m->hasEmission() && // check cur. depth AND emission
         sampler.randFloat() <= setting.rusRoulette) { // Survive the Russian roulette?
         
-        const BSDFSample bsdf = hit.m->sample(wo, N_hit, sampler);
+        const BSDFSample bsdf = hit.m->sampleSurface(wo, N_hit, hit.geometricNormal, sampler);
 
         if (bsdf.isValid()) {
-            const Vector3f offsetNormal =
-                (dotProduct(bsdf.direction, N_hit) >= 0.f)
-                ? N_hit : -N_hit;
-            const Ray pathRay(p_hit + offsetNormal * EPSILON, bsdf.direction);
+            const Ray pathRay(offsetRayOrigin(hit, bsdf.direction), bsdf.direction);
 
             L_indir =
                 radiance(pathRay, scene, sampler, depth+1) // Light      (next object)
@@ -69,7 +66,7 @@ Vector3f PathTracingIntegrator::radiance(
             const Vector3f ws = normalize(lightOffset);
             const Vector3f NN = intersect_light.normal;
 
-            const Ray shadow_ray( p_hit + N_hit * EPSILON, ws );
+            const Ray shadow_ray(offsetRayOrigin(hit, ws), ws);
             const Intersection shadow_hit = scene.intersect(shadow_ray);
 
             const float dist_diff = std::abs(
@@ -97,8 +94,5 @@ Vector3f PathTracingIntegrator::radiance(
     if (hit.m->hasEmission())      // If hitting light source
         shade_color += hit.m->getEmission(); // add emission
 
-    for (int i = 0; i < 3; ++i)
-        shade_color[i] = clamp(0, 1, shade_color[i]);
-
-    return shade_color;
+    return shade_color.getClamped();
 }
