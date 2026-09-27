@@ -64,6 +64,10 @@ class Bounds3 {
     //            p.y <= b.pMax.y && p.z >= b.pMin.z && p.z <= b.pMax.z);
     //}
 
+    inline const Vector3f& operator[](int i) const {
+        return (i == 1) ? pMax : pMin;
+    }
+
     inline bool IntersectP(const Ray& ray, const Vector3f& invDir,
                            const std::array<int, 3>& dirisNeg) const;
 };

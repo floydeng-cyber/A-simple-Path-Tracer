@@ -147,6 +147,7 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\acceleration\SAH.hpp" />
     <ClInclude Include="src\core\Bounds3.hpp" />
     <ClInclude Include="src\core\global.hpp" />
     <ClInclude Include="src\core\Ray.hpp" />

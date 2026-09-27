@@ -40,8 +40,8 @@ public:
         return Vector3f(vec.x * val, vec.y * val, vec.z * val); // now allows 2*vec3f
     }
 
-    inline float operator[](int index) const { return (&x)[index]; } // access const Vector3f
-    inline float& operator[](int index) { return (&x)[index]; }     // overwrite Vector3f
+    inline float operator[](int index) const;
+    inline float& operator[](int index);
 
     static Vector3f Min(const Vector3f& vec1, const Vector3f& vec2) {
         return Vector3f(std::min(vec1.x,vec2.x),std::min(vec1.y,vec2.y),std::min(vec1.z,vec2.z));
@@ -55,6 +55,12 @@ public:
         return Vector3f(std::min(1.f, x), std::min(1.f, y), std::min(1.f, z));
     }
 };
+inline float Vector3f::operator[](int index) const {
+    return (&x)[index];
+}
+inline float& Vector3f::operator[](int index) {
+    return (&x)[index];
+}
 
 class Vector2f {    // 2D-version
 public:

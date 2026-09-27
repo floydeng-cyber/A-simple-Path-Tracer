@@ -91,6 +91,9 @@
     <ClInclude Include="src\rendering\integrators\PhotonMappingIntegrator.hpp">
       <Filter>Rendering\Integrators</Filter>
     </ClInclude>
+    <ClInclude Include="src\acceleration\SAH.hpp">
+      <Filter>Acceleration</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

@@ -10,7 +10,7 @@ class Sampler;
 
 class Object {
 public:
-    //Object() {}
+    Object() {}
     virtual ~Object() = default;
 
     virtual Intersection getIntersection(Ray _ray) = 0;
