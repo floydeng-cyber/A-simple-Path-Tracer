@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <atomic>
 #include <vector>
 #include <memory>
 #include <ctime>
@@ -13,11 +12,7 @@
 class Sampler;
 
 struct BVHBuildNode;
-// BVHAccel Forward Declarations
-struct BVHPrimitiveInfo;
 
-// BVHAccel Declarations
-inline int leafNodes, totalLeafNodes, totalPrimitives, interiorNodes;
 class BVHAccel {
 
 public:
@@ -26,7 +21,6 @@ public:
 
     // BVHAccel Public Methods
     BVHAccel(std::vector<Object*> p, int maxPrimsInNode = 1, SplitMethod splitMethod = SplitMethod::NAIVE);
-    Bounds3 WorldBound() const;
 
     ~BVHAccel() = default;
     
@@ -40,7 +34,6 @@ public:
     std::unique_ptr<BVHBuildNode> recursiveBuild(std::vector<Object*> objects);
 
     Intersection Intersect(const Ray &ray) const;    
-    bool IntersectP(const Ray &ray) const;
 
     // BVHAccel Private Data
     const int maxPrimsInNode;
@@ -66,6 +59,4 @@ struct BVHBuildNode {
 
     float area = 0.f;
     int splitAxis = 0;
-    int firstPrimOffset = 0;
-    int nPrimitives = 0;
 };

@@ -49,13 +49,7 @@
     <ClInclude Include="src\core\Vector.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\scene\AreaLight.hpp">
-      <Filter>Scene</Filter>
-    </ClInclude>
     <ClInclude Include="src\scene\Intersection.hpp">
-      <Filter>Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="src\scene\Light.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
     <ClInclude Include="src\scene\Material.hpp">

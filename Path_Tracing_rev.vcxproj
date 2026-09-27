@@ -153,9 +153,7 @@
     <ClInclude Include="src\core\RenderSettings.hpp" />
     <ClInclude Include="src\core\Sampler.hpp" />
     <ClInclude Include="src\core\Vector.hpp" />
-    <ClInclude Include="src\scene\AreaLight.hpp" />
     <ClInclude Include="src\scene\Intersection.hpp" />
-    <ClInclude Include="src\scene\Light.hpp" />
     <ClInclude Include="src\scene\Material.hpp" />
     <ClInclude Include="src\scene\Scene.hpp" />
     <ClInclude Include="src\geometry\Object.hpp" />

@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <iostream>
 #include <cmath>
 #include <algorithm>
 
@@ -21,11 +20,6 @@ public:
     float norm() const { return std::sqrt(x * x + y * y + z * z); } // magnitude
     float norm2() const { return x * x + y * y + z * z; }   // magnitude squared
 
-    Vector3f normalized() {
-        float nInv = 1/std::sqrt(x * x + y * y + z * z);
-        return Vector3f(x * nInv, y * nInv, z * nInv);      // normalized vector
-    }
-
     Vector3f operator * (const Vector3f &vec) const {       // dot product with another vector
         return Vector3f(x * vec.x, y * vec.y, z * vec.z);
     }
@@ -44,9 +38,6 @@ public:
 
     friend Vector3f operator * (const float &val, const Vector3f &vec) {
         return Vector3f(vec.x * val, vec.y * val, vec.z * val); // now allows 2*vec3f
-    }
-    friend std::ostream & operator << (std::ostream &os, const Vector3f &v) {
-        return os << v.x << ", " << v.y << ", " << v.z;     // allow to be directly printed
     }
 
     inline float operator[](int index) const { return (&x)[index]; } // access const Vector3f
@@ -68,16 +59,16 @@ public:
 class Vector2f {    // 2D-version
 public:
     float x, y;
-    Vector2f() : x(0), y(0) {}
-    Vector2f(float val) : x(val), y(val) {}
+    //Vector2f() : x(0), y(0) {}
+    //Vector2f(float val) : x(val), y(val) {}
     Vector2f(float xx, float yy) : x(xx), y(yy) {}
-    Vector2f operator * (const float &val) const { return Vector2f(x * val, y * val); }
-    Vector2f operator + (const Vector2f &vec) const { return Vector2f(x + vec.x, y + vec.y); }
+    //Vector2f operator * (const float &val) const { return Vector2f(x * val, y * val); }
+    //Vector2f operator + (const Vector2f &vec) const { return Vector2f(x + vec.x, y + vec.y); }
 };
 
-inline Vector3f lerp(const Vector3f &vec1, const Vector3f& vec2, const float &t) {
-    return vec1*(1 - t) + vec2*t;
-}
+//inline Vector3f lerp(const Vector3f &vec1, const Vector3f& vec2, const float &t) {
+//    return vec1*(1 - t) + vec2*t;
+//}
 
 inline Vector3f normalize(const Vector3f &vec) {
     float mag2 = vec.x*vec.x + vec.y*vec.y + vec.z*vec.z;

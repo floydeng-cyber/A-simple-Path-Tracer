@@ -30,10 +30,10 @@ BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
 std::unique_ptr<BVHBuildNode> BVHAccel::recursiveBuild(std::vector<Object*> objects) {
     auto node = std::make_unique<BVHBuildNode>();
 
-    // Compute bounds of all primitives in BVH node
-    Bounds3 bounds;
-    for (int i = 0; i < objects.size(); ++i)
-        bounds = Union(bounds, objects[i]->getBounds());
+    //// Compute bounds of all primitives in BVH node
+    //Bounds3 bounds;
+    //for (int i = 0; i < objects.size(); ++i)
+    //    bounds = Union(bounds, objects[i]->getBounds());
     if (objects.size() == 1) {
         // Create leaf _BVHBuildNode_
         node->bounds = objects[0]->getBounds();

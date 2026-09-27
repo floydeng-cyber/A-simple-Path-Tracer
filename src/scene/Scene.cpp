@@ -101,22 +101,3 @@ PhotonEmissionSample Scene::samplePhotonEmission(
 
     return sample;
 }
-
-bool Scene::trace(
-        const Ray &ray,
-        const std::vector<Object*> &objects,
-        float& tNear, uint32_t &index, Object **hitObject) {
-    *hitObject = nullptr;
-    for (uint32_t k = 0; k < objects.size(); ++k) {
-        float tNearK = kInfinity;
-        uint32_t indexK;
-        Vector2f uvK;
-        if (objects[k]->intersect(ray, tNearK, indexK) && tNearK < tNear) {
-            *hitObject = objects[k];
-            tNear = tNearK;
-            index = indexK;
-        }
-    }
-
-    return (*hitObject != nullptr);
-}

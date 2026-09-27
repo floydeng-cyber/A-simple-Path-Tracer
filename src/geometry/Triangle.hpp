@@ -42,16 +42,16 @@ public:
         if (dotProduct(n2, normal) < 0.f) n2 = -n2;
     }
 
-    bool intersect(const Ray& ray) override;
-    bool intersect(const Ray& ray, float& tnear,
-                   uint32_t& index) const override;
+    //bool intersect(const Ray& ray) override;
+    //bool intersect(const Ray& ray, float& tnear,
+    //               uint32_t& index) const override;
     Intersection getIntersection(Ray ray) override;
-    void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
-                              const uint32_t& index, const Vector2f& uv,
-                              Vector3f& N, Vector2f& st) const override {
-        N = normal;
-    }
-    Vector3f evalDiffuseColor(const Vector2f&) const override;
+    //void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
+    //                          const uint32_t& index, const Vector2f& uv,
+    //                          Vector3f& N, Vector2f& st) const override {
+    //    N = normal;
+    //}
+    //Vector3f evalDiffuseColor(const Vector2f&) const override;
     Bounds3 getBounds() override;
     void Sample(Intersection& pos, float& pdf, Sampler& sampler){
         // u: Distance along triangle (0 @(vertex0), 1 @base(v1-v2))
@@ -153,32 +153,15 @@ public:
         bvh = std::make_unique<BVHAccel>(std::move(ptrs));
     }
 
-    bool intersect(const Ray& ray) override {
-        return getIntersection(ray).happened;
-    }
-
-    bool intersect(const Ray& ray, float& tnear,
-                   uint32_t& index) const override {
-        const Intersection hit = bvh->Intersect(ray);
-        if (!hit.happened || hit.distance >= tnear) return false;
-        tnear = static_cast<float>(hit.distance);
-        index = 0;
-        return true;
-    }
-
     Bounds3 getBounds() override { return bounding_box; }
 
-    void getSurfaceProperties(const Vector3f&, const Vector3f&,
-                              const uint32_t&, const Vector2f&,
-                              Vector3f&, Vector2f&) const override {}
-
-    Vector3f evalDiffuseColor(const Vector2f& st) const {
-        float scale = 5;
-        float pattern =
-            (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
-        return lerp(Vector3f(0.815, 0.235, 0.031),
-                    Vector3f(0.937, 0.937, 0.231), pattern);
-    }
+    //Vector3f evalDiffuseColor(const Vector2f& st) const {
+    //    float scale = 5;
+    //    float pattern =
+    //        (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
+    //    return lerp(Vector3f(0.815, 0.235, 0.031),
+    //                Vector3f(0.937, 0.937, 0.231), pattern);
+    //}
 
     Intersection getIntersection(Ray ray) override {
         Intersection intersec;
@@ -208,12 +191,6 @@ public:
     float area = 0.f;
     Material* m = nullptr;
 };
-
-inline bool Triangle::intersect(const Ray& ray) { return true; }
-inline bool Triangle::intersect(const Ray& ray, float& tnear,
-                                uint32_t& index) const {
-    return false;
-}
 
 inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 
@@ -252,11 +229,6 @@ inline Intersection Triangle::getIntersection(Ray ray) {
     inter.positionError = positionErrorBound(b0, b1, b2);
     inter.distance = t_tmp;
     inter.m = m;
-    inter.obj = this;
 
     return inter;
-}
-
-inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const {
-    return Vector3f(0.5, 0.5, 0.5);
 }

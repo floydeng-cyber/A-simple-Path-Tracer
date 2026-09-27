@@ -24,10 +24,10 @@ struct BSDFSample {
             && direction.norm() > EPSILON;
     }
     
-    bool isSpecular() const {
-        return event == ScatterEvent::Reflection
-            || event == ScatterEvent::Transmission;
-    }
+    //bool isSpecular() const {
+    //    return event == ScatterEvent::Reflection
+    //        || event == ScatterEvent::Transmission;
+    //}
 };
 
 enum MaterialType {
@@ -183,7 +183,6 @@ public:
     Vector3f m_emission = Vector3f(0.f);
     float ior = 1.5f;
     Vector3f Kd = Vector3f(0.f), Ks = Vector3f(0.f);
-    float specularExponent = 32.f;
 
     inline Material(MaterialType t=DIFFUSE, Vector3f e=Vector3f(0,0,0));
     inline MaterialType getType() const;
@@ -208,7 +207,6 @@ public:
         const Vector3f& wo,
         const Vector3f& N) const;
 
-    inline Vector3f getColorAt(double u, double v);
     inline Vector3f getEmission() const;
     inline bool hasEmission() const;
 };
@@ -219,14 +217,8 @@ Material::Material(MaterialType type, Vector3f emit)
 MaterialType Material::getType() const { return m_type;}
 Vector3f Material::getEmission() const { return m_emission;}
 bool Material::hasEmission() const {
-    if (m_emission.norm() > EPSILON) return true;
-    else return false;
+    return (m_emission.norm() > EPSILON);
 }
-
-Vector3f Material::getColorAt(double u, double v) {
-    return Vector3f();
-}
-
 
 BSDFSample Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& sampler) const {
     switch(m_type){
