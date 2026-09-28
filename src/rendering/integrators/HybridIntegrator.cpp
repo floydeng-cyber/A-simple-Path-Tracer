@@ -41,6 +41,6 @@ Vector3f HybridIntegrator::radiance(
             depth + 1) * scattering.weight;
     }
 
-    return pathTracer.radiance(ray, scene, sampler, depth)
+    return pathTracer.radianceAtHit(ray, hit, scene, sampler, depth)
          + photonMapper.estimateCaustic(hit);
 }

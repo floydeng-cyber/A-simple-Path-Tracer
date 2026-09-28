@@ -26,10 +26,7 @@ public:
 	}
 
 	static std::uint64_t makeSeed(
-		std::uint64_t baseSeed, std::uint64_t pixelIdx, std::uint64_t sampleIdx) {
-		return scrambleBits(baseSeed
-			 ^ scrambleBits(pixelIdx)
-			 ^ scrambleBits(sampleIdx + 0x9e3779b97f4a7c15ULL)
-		);
+		std::uint64_t baseSeed, std::uint64_t pixelIdx) {
+		return scrambleBits(baseSeed^scrambleBits(pixelIdx));
 	}
 };

@@ -14,4 +14,11 @@ public:
 		const Scene& scene,
 		Sampler& sampler,
 		int depth) const override;
+
+	Vector3f radianceAtHit(
+		const Ray& ray,
+		const struct Intersection& hit,
+		const Scene& scene,
+		Sampler& sampler,
+		int depth) const;
 };

@@ -88,13 +88,11 @@ inline std::vector<Object*>::iterator axis_split(std::vector<Object*>& objects, 
     if (splitAxis < 0 || C_leaf <= (C_trav + C_int * splitCost/nodeSA))
         return objects.end(); // No usable or cheaper split
 
-    auto splitObj = _objects.end();   // (will) point to 1st obj of right-bound
-    if (splitAxis >= 0) {   // check for valid axis to split
-        splitObj = std::partition(_objects.begin(), _objects.end(),
+    const auto splitObj = std::partition(_objects.begin(), _objects.end(),
             [&](const _Object& obj) {
                 return bin_idx(obj, splitAxis) <= splitBin;
             });
-    }
+
     if (splitObj == _objects.begin() || splitObj == _objects.end()) {   // if invalid splt
         return objects.end();
     }

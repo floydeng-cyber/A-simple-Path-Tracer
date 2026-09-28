@@ -12,17 +12,22 @@ PathTracingIntegrator::PathTracingIntegrator(
 ) : setting(set) {}
 
 Vector3f PathTracingIntegrator::radiance(
-	const Ray& ray,
-	const Scene& scene,
+    const Ray& ray,
+    const Scene& scene,
     Sampler& sampler,
-	int depth) const {
-    
+    int depth) const {
+
     if (depth > setting.MaxDepth)
         return Vector3f(0.f);   // max depth reached; return 0's
+    
+    return radianceAtHit(ray, scene.intersect(ray), scene, sampler, depth);
+}
 
-    const Intersection hit = scene.intersect(ray);  // Instanciate the intersection (w/ something)
+Vector3f PathTracingIntegrator::radianceAtHit(
+    const Ray& ray, const Intersection& hit,
+    const Scene& scene, Sampler& sampler, int depth) const {
 
-    if (!hit.happened)        // If not intersecting,
+    if (!hit.happened || depth > setting.MaxDepth)        // If not intersecting,
         return Vector3f(0.f); // return no light/color
 
     // Store properties of the surface hit

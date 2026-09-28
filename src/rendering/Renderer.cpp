@@ -40,12 +40,9 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
             for (int i = 0; i < setting.width; ++i) { // Visit each pixel in the row.
                 const int frameIndex = j * setting.width + i; // Convert 2D position to array index.
 
+                Sampler sampler(Sampler::makeSeed(
+                    setting.randSeed, static_cast<std::uint64_t>(frameIndex)));
                 for (int sampleIndex = 0; sampleIndex < setting.SPP; ++sampleIndex) { // Trace all pixel samples.
-                    Sampler sampler(Sampler::makeSeed( // Create a repeatable sample generator.
-                        setting.randSeed, // Global seed.
-                        static_cast<std::uint64_t>(frameIndex), // Pixel seed component.
-                        static_cast<std::uint64_t>(sampleIndex))); // Sample seed component.
-
                     const Vector2f deviation = sampler.rand2D(); // Random subpixel offset.
                     const float normalizedX = // Horizontal camera coordinate.
                         (static_cast<float>(i) + deviation.x) / setting.width; // Normalize jittered x.
