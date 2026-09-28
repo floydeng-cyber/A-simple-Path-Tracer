@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "Ray.hpp"
-#include "Vector.hpp"
+#include "geometry/Ray.hpp"
+#include "core/Vector.hpp"
 #include <limits>
 #include <array>
 
@@ -8,8 +8,8 @@ class Bounds3 {
   public:
     Vector3f pMin, pMax; // two points to specify the bounding box
     Bounds3() {
-        constexpr double minNum = std::numeric_limits<double>::lowest();
-        constexpr double maxNum = std::numeric_limits<double>::max();
+        constexpr float minNum = std::numeric_limits<float>::lowest();
+        constexpr float maxNum = std::numeric_limits<float>::max();
         pMax = Vector3f(minNum, minNum, minNum);
         pMin = Vector3f(maxNum, maxNum, maxNum);
     }
@@ -30,11 +30,12 @@ class Bounds3 {
     }
 
     double SurfaceArea() const {
-        Vector3f d = Diagonal();
-        return 2 * (d.x * d.y + d.x * d.z + d.y * d.z);
+        Vector3f d = pMax - pMin;
+        return 2 * (d.x*d.y + d.x*d.z + d.y*d.z);
     }
 
-    Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
+    Vector3f Centroid() const { return 0.5f * pMin + 0.5f * pMax; }
+
     //Bounds3 Intersect(const Bounds3& b) {
     //    return Bounds3(Vector3f(fmax(pMin.x, b.pMin.x), fmax(pMin.y, b.pMin.y),
     //                            fmax(pMin.z, b.pMin.z)),

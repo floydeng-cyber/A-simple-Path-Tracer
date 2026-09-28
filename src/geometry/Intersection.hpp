@@ -1,26 +1,20 @@
 ﻿#pragma once
 
-#include "Vector.hpp"
-#include "Material.hpp"
+#include <cmath>
+#include <limits>
 
-//class Object;
+#include "core/Vector.hpp"
+#include "scene/Material.hpp"
 
 struct Intersection {
-    Intersection(){
-        happened=false;
-        coords=Vector3f();
-        normal=Vector3f();
-        distance= std::numeric_limits<double>::max();
-        m=nullptr;
-    }
-    bool happened;
+    bool happened = false;
     Vector3f coords;
     Vector3f normal;
     Vector3f geometricNormal;
     Vector3f positionError;
     Vector3f emit;
-    double distance;
-    Material* m;
+    double distance = std::numeric_limits<double>::max();
+    Material* m = nullptr;
 };
 
 // Offset using the geometric surface and a bound on position rounding error.

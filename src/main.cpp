@@ -2,18 +2,16 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
-#include <stdexcept>
 
-#include "Camera.hpp"
-#include "HybridIntegrator.hpp"
-#include "PathTracingIntegrator.hpp"
-#include "PhotonMappingIntegrator.hpp"
-#include "Renderer.hpp"
-#include "RenderSettings.hpp"
-#include "Sampler.hpp"
-#include "Scene.hpp"
-#include "Sphere.hpp"
-#include "Triangle.hpp"
+#include "core/RenderSettings.hpp"
+#include "core/Sampler.hpp"
+#include "geometry/Triangle.hpp"
+#include "rendering/Camera.hpp"
+#include "rendering/Renderer.hpp"
+#include "rendering/integrators/HybridIntegrator.hpp"
+#include "rendering/integrators/PathTracingIntegrator.hpp"
+#include "rendering/integrators/PhotonMappingIntegrator.hpp"
+#include "scene/Scene.hpp"
 
 int main() {
     using Clock = std::chrono::steady_clock;
@@ -56,22 +54,21 @@ int main() {
     Material& sphereMaterial = scene.createMaterial(DIELECTRIC);
     sphereMaterial.Ks = Vector3f(1.0f);
     sphereMaterial.ior = 1.52f;
-    MeshTriangleOptions transparentMeshOptions;
-    transparentMeshOptions.is2sided = true;
-    transparentMeshOptions.smoothShading = settings.smoothMesh;
     scene.addObj<MeshTriangle>(
         "assets/models/complexSpheres.obj",
         &sphereMaterial,
-        transparentMeshOptions);
+        MeshTriangleOptions{true, settings.smoothMesh});
 
     scene.addObj<MeshTriangle>("assets/models/cornellbox/floor.obj", &white);
-    //scene.addObj<MeshTriangle>("assets/models/cornellbox/shortbox.obj", &white);
-    //scene.addObj<MeshTriangle>("assets/models/cornellbox/tallbox.obj", &white);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/left.obj", &red);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/right.obj", &green);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/light.obj", &light);
+    scene.addObj<MeshTriangle>("assets/models/cornellbox/shortbox.obj", &white);
+    scene.addObj<MeshTriangle>("assets/models/cornellbox/tallbox.obj", &white);
+
+    const auto sceneLoadEnd = Clock::now();
     scene.buildBVH();
-    const auto sceneEnd = Clock::now();
+    const auto BVHEnd = Clock::now();
 
     const auto pipelineStart = Clock::now();
     std::unique_ptr<Integrator> integrator;
@@ -97,8 +94,10 @@ int main() {
         scene, camera, *integrator, settings);
     const auto pipelineEnd = Clock::now();
 
-    const double sceneSeconds =
-        std::chrono::duration<double>(sceneEnd - sceneStart).count();
+    const double sceneLoadSeconds =
+        std::chrono::duration<double>(sceneLoadEnd - sceneStart).count();
+    const double BVHBuildSeconds =
+        std::chrono::duration<double>(BVHEnd - sceneLoadEnd).count();
     const double preprocessSeconds =
         std::chrono::duration<double>(preprocessEnd - preprocessStart).count();
     const double pipelineSeconds =
@@ -110,7 +109,8 @@ int main() {
               << "Render complete\n"
               << "  Mode:                  " << renderModeName(settings.renderMode) << "\n"
               << "  Output:                " << settings.outputFile << "\n"
-              << "  Scene setup + BVH:     " << sceneSeconds << " s\n"
+              << "  Scene loading:         " << sceneLoadSeconds << " s\n"
+              << "  BVH construction:      " << BVHBuildSeconds << " s\n"
               << "  Integrator preprocess: " << preprocessSeconds << " s\n"
               << "  Pixel computation:     " << renderStats.integrationSeconds << " s\n"
               << "  Image write:           " << renderStats.imageWriteSeconds << " s\n"

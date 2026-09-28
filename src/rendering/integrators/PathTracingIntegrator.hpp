@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Integrator.hpp"
-#include "RenderSettings.hpp"
+#include "core/RenderSettings.hpp"
+#include "rendering/integrators/Integrator.hpp"
 
 class PathTracingIntegrator final: public Integrator {
 private:

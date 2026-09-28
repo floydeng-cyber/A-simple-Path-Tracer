@@ -11,8 +11,8 @@
 #include <thread> // Worker threads.
 #include <vector> // Framebuffer and thread storage.
 
-#include "Sampler.hpp" // Random sampling.
-#include "Scene.hpp" // Scene data.
+#include "core/Sampler.hpp" // Random sampling.
+#include "scene/Scene.hpp" // Scene data.
 
 const float EPSILON = 1e-5f; // Shared ray-offset tolerance.
 

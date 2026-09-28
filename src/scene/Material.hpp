@@ -1,7 +1,8 @@
 ﻿#pragma once
 
-#include "Vector.hpp"
-#include "Sampler.hpp"
+#include "core/Sampler.hpp"
+#include "core/Vector.hpp"
+#include "core/global.hpp"
 
 enum class ScatterEvent {
     Invalid,

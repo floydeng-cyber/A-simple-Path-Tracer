@@ -7,27 +7,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(Path_Tracing_rev
     src/main.cpp
 
-    src/core/Bounds3.hpp
     src/core/global.hpp
-    src/core/Ray.hpp
     src/core/RenderSettings.hpp
     src/core/Sampler.hpp
     src/core/Vector.hpp
 
-    src/scene/AreaLight.hpp
-    src/scene/Intersection.hpp
-    src/scene/Light.hpp
     src/scene/Material.hpp
     src/scene/Scene.cpp
     src/scene/Scene.hpp
 
     src/geometry/Object.hpp
+    src/geometry/Bounds3.hpp
+    src/geometry/Intersection.hpp
+    src/geometry/Ray.hpp
     src/geometry/Sphere.hpp
     src/geometry/Triangle.hpp
-    src/OBJ_Loader.hpp
+    src/third_party/ObjLoader.hpp
 
     src/acceleration/BVH.cpp
     src/acceleration/BVH.hpp
+    src/acceleration/SAH.hpp
 
     src/rendering/Camera.cpp
     src/rendering/Camera.hpp
@@ -45,12 +44,6 @@ add_executable(Path_Tracing_rev
 
 target_include_directories(Path_Tracing_rev PRIVATE
     src
-    src/core
-    src/scene
-    src/geometry
-    src/acceleration
-    src/rendering
-    src/rendering/integrators
 )
 
 if(MSVC)

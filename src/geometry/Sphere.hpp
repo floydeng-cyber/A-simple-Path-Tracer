@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include "Object.hpp"
-#include "Vector.hpp"
-#include "Bounds3.hpp"
-#include "Material.hpp"
-#include "Sampler.hpp"
+#include "core/Sampler.hpp"
+#include "core/Vector.hpp"
+#include "geometry/Bounds3.hpp"
+#include "geometry/Object.hpp"
+#include "scene/Material.hpp"
 
 class Sphere : public Object{
 public:

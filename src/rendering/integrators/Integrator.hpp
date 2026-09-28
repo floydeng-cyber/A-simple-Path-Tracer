@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Ray.hpp"
-#include "Vector.hpp"
+#include "core/Vector.hpp"
+#include "geometry/Ray.hpp"
 
 class Scene;
 class Sampler;

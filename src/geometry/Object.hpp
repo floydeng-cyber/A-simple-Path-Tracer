@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include "Vector.hpp"
-#include "global.hpp"
-#include "Bounds3.hpp"
-#include "Ray.hpp"
-#include "Intersection.hpp"
+#include "core/Vector.hpp"
+#include "core/global.hpp"
+#include "geometry/Bounds3.hpp"
+#include "geometry/Intersection.hpp"
+#include "geometry/Ray.hpp"
 
 class Sampler;
 

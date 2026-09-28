@@ -3,12 +3,12 @@
 #include <cassert>
 #include <array>
 
-#include "BVH.hpp"
-#include "Intersection.hpp"
-#include "Material.hpp"
-#include "OBJ_Loader.hpp"
-#include "Object.hpp"
-#include "Sampler.hpp"
+#include "acceleration/BVH.hpp"
+#include "core/Sampler.hpp"
+#include "geometry/Intersection.hpp"
+#include "geometry/Object.hpp"
+#include "scene/Material.hpp"
+#include "third_party/ObjLoader.hpp"
 
 class Triangle : public Object {
 public:

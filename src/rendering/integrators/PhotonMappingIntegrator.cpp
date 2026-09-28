@@ -4,11 +4,11 @@
 #include <cmath>
 #include <iostream>
 
-#include "global.hpp"
-#include "Intersection.hpp"
-#include "Material.hpp"
-#include "Scene.hpp"
-#include "Sampler.hpp"
+#include "core/Sampler.hpp"
+#include "core/global.hpp"
+#include "geometry/Intersection.hpp"
+#include "scene/Material.hpp"
+#include "scene/Scene.hpp"
 
 float component(const Vector3f& value, int axis) {
     return value[axis];

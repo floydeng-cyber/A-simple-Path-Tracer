@@ -42,12 +42,12 @@ construction is included in the render-pipeline total for fair comparisons.
 ```text
 assets/models/              Scene geometry
 src/main.cpp                Program entry point
-src/core/                   Math, rays, sampling, and settings
-src/scene/                  Scene, materials, lights, and intersections
-src/geometry/               Renderable geometry
-src/acceleration/           BVH implementation
+src/core/                   Shared math, sampling, and settings
+src/geometry/               Bounds, rays, intersections, and shapes
+src/acceleration/           BVH construction and traversal
+src/scene/                  Scene ownership, materials, and light sampling
 src/rendering/              Camera and renderer
 src/rendering/integrators/  Path, photon, and hybrid integrators
-src/OBJ_Loader.hpp          Third-party OBJ loader
+src/third_party/            External single-header dependencies
 render_img/                 Generated images (ignored by Git)
 ```

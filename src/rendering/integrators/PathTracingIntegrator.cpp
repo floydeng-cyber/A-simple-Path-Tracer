@@ -1,8 +1,8 @@
 ﻿#include "PathTracingIntegrator.hpp"
 
-#include "Scene.hpp"
-#include "RenderSettings.hpp"
-#include "Sampler.hpp"
+#include "core/RenderSettings.hpp"
+#include "core/Sampler.hpp"
+#include "scene/Scene.hpp"
 
 #include <algorithm>
 #include <cmath>

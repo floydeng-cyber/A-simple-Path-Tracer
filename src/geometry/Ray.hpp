@@ -1,8 +1,7 @@
 ﻿#pragma once
-#include "Vector.hpp"
+#include "core/Vector.hpp"
 
 struct Ray{
-    // Destination = origin + t*direction
     Vector3f origin;
     Vector3f direction, direction_inv;
 
@@ -10,6 +9,4 @@ struct Ray{
             : origin(ori), direction(dir) {
         direction_inv = Vector3f(1. / direction.x, 1. / direction.y, 1. / direction.z);
     }
-
-    //Vector3f operator()(double t) const { return origin + direction * t; }
 };

@@ -5,12 +5,10 @@
 #include <utility>
 #include <vector>
 
-#include "Vector.hpp"
-#include "Object.hpp"
-//#include "Light.hpp"
-//#include "AreaLight.hpp"
-#include "BVH.hpp"
-#include "Ray.hpp"
+#include "acceleration/BVH.hpp"
+#include "core/Vector.hpp"
+#include "geometry/Object.hpp"
+#include "geometry/Ray.hpp"
 
 class Sampler;
 
@@ -41,7 +39,6 @@ public:
         return result;
     }
 
-    // add object to scene
     template<typename objType, typename... Args>
     objType& addObj(Args&&... args) {
         static_assert(std::is_base_of_v<Object, objType>);

@@ -1,111 +1,108 @@
 ﻿#pragma once
-#include <vector>
-#include <algorithm>
 
-#include "Object.hpp"
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <limits>
+#include <vector>
+
+#include "geometry/Object.hpp"
 
 namespace SAH {
-	struct SAH_bin {
-		Bounds3 binBound;
-		int objCount = 0;
-	};
 
-	template <typename type>
-	auto SAH_axis_split(std::vector<type*>& objects, Bounds3& bounds) {
+    struct _Object {   // temp. storage of objects (for concise naming)
+        Object* object;
+        Bounds3 bound;
+        Vector3f centroid;
+    };
+    struct Bin {    // Section splitted in space
+        Bounds3 bound;
+        std::size_t count = 0;
+    };
 
-		// Prepare constants
-		// =======================================================================
-		constexpr float C_trav = 1.f;				// Cost of Traversal
-		constexpr float C_insect = 4.f;				// Cost of Intersection
-		constexpr int numOfBins = 15;				// Number of Bins (for SAH)
-		constexpr int binEndIdx = numOfBins - 1;	// Index of last bin
-		const     int numOfObj = objects.size();	// Number of objects
+inline std::vector<Object*>::iterator axis_split(std::vector<Object*>& objects, const Bounds3& bounds) {
+    if (objects.size() < 2) return objects.end();   // end splitting if only 1 object
 
-		// Initialize indicators
-		// =======================================================================
-		float best_cost = std::numeric_limits<float>::infinity(); // lower cost
-		int   best_axis = 0;		// axis to split
-		int   best_split = 0;		// [object] index to split (split @its right)
+    constexpr int binCount = 15;    // set 15 temp. bins in space for SAH
+    
+    std::vector<_Object> _objects;    // create a temp. container for objects
+    _objects.reserve(objects.size());
+    Bounds3 centroid_bound;             // find the boundary of centroid of all objects
+    for (Object* obj : objects) {       // loop through all objects
+        _objects.emplace_back(_Object( obj, obj->getBounds(), obj->getBounds().Centroid() ));
+        centroid_bound = Union(centroid_bound, obj->getBounds().Centroid());
+    }
 
-		// Preapre object lists along 3D
-		// =======================================================================
-		std::vector<std::vector<Object*>> objs_in_3axis(3, objects);
+    // Fit selected object into a bin
+    const auto bin_idx = [&](const _Object& obj, int axis)->int {
+        const float offset = (obj.centroid[axis] - centroid_bound.pMin[axis])
+                           / (centroid_bound.pMax[axis] - centroid_bound.pMin[axis]);
+        return static_cast<int>(std::clamp(offset * binCount, 0.f, binCount-1.f));
+    };
 
-		// Loop through 3D to search for lowest split cost
-		for (int dim = 0; dim < 3; ++dim) {
-			// step 1: Sort objects spatially, along xyz-axes
-			std::sort(objs_in_3axis[dim].begin(), objs_in_3axis[dim].end(), [dim](auto f1, auto f2) {
-				return f1->getBounds().Centroid()[dim] < f2->getBounds().Centroid()[dim];
-				});
+    double splitCost = std::numeric_limits<double>::infinity();
+    int    splitAxis = -1;
+    int    splitBin = -1;   // on 'right'-side plane
+    const double nodeSA = bounds.SurfaceArea();
+    constexpr double C_trav = 1;   // Cost coef. of traversal
+    constexpr double C_int = 4;    // Cost coef. of intersection
+    const double C_leaf = C_int * objects.size();   // Cost coef. of not-splitting
+    
+    if (nodeSA > 0.0 && std::isfinite(nodeSA)) { // Check for valid node bound
+        for (int axis = 0; axis < 3; ++axis) {  // Check every dimension
+            const float extent = centroid_bound.pMax[axis] - centroid_bound.pMin[axis];
+            if (!(extent > 0.0) || !std::isfinite(extent)) continue;
 
-			// step 2: Initialize a list of SAH-bins
-			std::vector<SAH_bin> bins(numOfBins);
+            std::array<Bin, binCount> bins;       // array of all bins
+            for (const _Object& obj : _objects) { // loop through all objects
+                Bin& select_bin = bins[bin_idx(obj, axis)];             // Find the best-fit bin
+                select_bin.bound = Union(select_bin.bound, obj.bound);  // Union-fy the bound of bin & object
+                ++select_bin.count; // Add a count of obj in the best-fit bin
+            }
 
-			// step 3: Loop through every object to assign to a SAH-bin each
-			float range_of_bins_inv = bounds.pMax[dim] - bounds.pMin[dim];
-			if (range_of_bins_inv < EPSILON) continue;
-			range_of_bins_inv = 1.f / range_of_bins_inv;
+            std::array<Bounds3, binCount> suf_bounds; // To accumulate bin bound from a reversed order
+            suf_bounds.back() = bins.back().bound;    // initialize w/last bin bound
+            for (int i = binCount - 2; i >= 0; --i)     // Loop through bins from backward
+                suf_bounds[i] = Union(bins[i].bound, suf_bounds[i + 1]); // Union-fy/accumulate
 
-			for (auto& obj : objs_in_3axis[dim]) {
-				int fitted_bin_idx = numOfBins
-					* (obj->getBounds().Centroid()[dim] - bounds.pMin[dim])
-					* range_of_bins_inv;
-				fitted_bin_idx = std::clamp(fitted_bin_idx, 0, binEndIdx);
+            Bounds3 pre_bounds;
+            std::size_t leftCnt = 0, rightCnt = 0;
+            double temp_cost;
+            for (int split_bin = 0; split_bin < binCount-1; ++split_bin) {  // Loop through 'right'-side until 2nd-last bin's
+                pre_bounds = Union(pre_bounds, bins[split_bin].bound); // accumulate 'left'-side bound
+                leftCnt += bins[split_bin].count;                     // accumulate 'left'-side obj-count
+                rightCnt = _objects.size() - leftCnt;
+                if (leftCnt == 0 || rightCnt == 0) continue;    // Skip for empty left-/right-side
 
-				// Unionize the bin w/obj; Accumulate obj-count per binn
-				bins[fitted_bin_idx].binBound = Union(bins[fitted_bin_idx].binBound, obj->getBounds());
-				bins[fitted_bin_idx].objCount += 1;
-			}
+                temp_cost = pre_bounds.SurfaceArea() * leftCnt
+                          + suf_bounds[split_bin+1].SurfaceArea() * rightCnt;
+                if (temp_cost < splitCost) {
+                    splitCost = temp_cost;
+                    splitAxis = axis;
+                    splitBin = split_bin;
+                }
+            }
+        }
+    }
 
-			// step 4: Loop through every bin to compute for cost each
-			auto SA_inv = 1 / bounds.SurfaceArea();	   // Prepare inverse of global surface area of bounds
-			std::vector<bool> binEmpt(numOfBins);	   // Check empty bins
-			std::vector<int> objCnt(numOfBins, 0);	   // Accumulaed object count per bin
-			std::vector<int> objCnt_rev(numOfBins, 0); // Accumulated objects in reversed order
+    if (splitAxis < 0 || C_leaf <= (C_trav + C_int * splitCost/nodeSA))
+        return objects.end(); // No usable or cheaper split
 
-			std::vector<Bounds3> prefix_SA(numOfBins);  // Left-side bound SA
-			std::vector<Bounds3> suffix_SA(numOfBins);  // Right-side bound SA
+    auto splitObj = _objects.end();   // (will) point to 1st obj of right-bound
+    if (splitAxis >= 0) {   // check for valid axis to split
+        splitObj = std::partition(_objects.begin(), _objects.end(),
+            [&](const _Object& obj) {
+                return bin_idx(obj, splitAxis) <= splitBin;
+            });
+    }
+    if (splitObj == _objects.begin() || splitObj == _objects.end()) {   // if invalid splt
+        return objects.end();
+    }
 
-			// Initializations:
-			binEmpt[0] = (bins[0].objCount == 0);
-			objCnt[0] = bins[0].objCount;
-			prefix_SA[0] = bins[0].binBound;
-			for (int i = 1; i < numOfBins; ++i) {
-				binEmpt[i] = (bins[i].objCount == 0);
-				objCnt[i] = objCnt[i - 1] + bins[i].objCount;
-				prefix_SA[i] = Union(prefix_SA[i - 1], bins[i].binBound);
-			}
-
-			objCnt_rev[binEndIdx] = bins[binEndIdx].objCount;
-			suffix_SA[binEndIdx] = bins[binEndIdx].binBound;
-			for (int i = binEndIdx - 1; i >= 0; --i) {
-				objCnt_rev[i] = objCnt_rev[i + 1] + bins[i].objCount;
-				suffix_SA[i] = Union(suffix_SA[i + 1], bins[i].binBound);
-			}
-
-			// Loop through every possible split (in between existing bins)
-			for (int bin_idx = 1; bin_idx < bins.size() - 1; ++bin_idx) {
-				if (objCnt[bin_idx] == 0 || objCnt_rev[bin_idx + 1] == 0)
-					continue;
-				// Cost of current trail split
-				float temp_cost = C_trav + C_insect * (
-					(prefix_SA[bin_idx].SurfaceArea() * SA_inv) * objCnt[bin_idx]
-					+ (suffix_SA[bin_idx + 1].SurfaceArea() * SA_inv) * objCnt_rev[bin_idx+1]
-					);
-
-				// Check if current split produces new lowest cost
-				if (temp_cost < best_cost) {
-					best_cost = temp_cost;
-					best_axis = dim;
-					best_split = objCnt[bin_idx];
-				}
-			}
-		}
-		if (best_split <= 0 || best_split >= numOfObj) {
-			best_axis = bounds.maxExtent();
-			best_split = numOfObj / 2;
-		}
-		objects = objs_in_3axis[best_axis];
-		return objects.begin() + best_split;
-	}
+    const auto split_idx = splitObj - _objects.begin();
+    std::transform(_objects.begin(), _objects.end(), objects.begin(),
+                    [](const _Object& obj) { return obj.object; });
+    return objects.begin() + split_idx;
 }
+
+} // namespace SAH

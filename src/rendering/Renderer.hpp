@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include "Scene.hpp"
-#include "Camera.hpp"
-#include "RenderSettings.hpp"
-#include "Integrator.hpp"
+#include "core/RenderSettings.hpp"
+#include "rendering/Camera.hpp"
+#include "rendering/integrators/Integrator.hpp"
+#include "scene/Scene.hpp"
 
 struct RenderStats {
     double integrationSeconds = 0.0;

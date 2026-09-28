@@ -13,7 +13,7 @@
     <Filter Include="Geometry">
       <UniqueIdentifier>{7C993BF5-2DB9-449D-84EB-D66B52B808A5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="External">
+    <Filter Include="Third Party">
       <UniqueIdentifier>{B99E00C9-B0D7-418A-BC9E-E0703A984D65}</UniqueIdentifier>
     </Filter>
     <Filter Include="Acceleration">
@@ -31,13 +31,7 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\core\Bounds3.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="src\core\global.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\core\Ray.hpp">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\RenderSettings.hpp">
@@ -49,9 +43,6 @@
     <ClInclude Include="src\core\Vector.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\scene\Intersection.hpp">
-      <Filter>Scene</Filter>
-    </ClInclude>
     <ClInclude Include="src\scene\Material.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
@@ -61,14 +52,23 @@
     <ClInclude Include="src\geometry\Object.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="src\geometry\Bounds3.hpp">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="src\geometry\Intersection.hpp">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="src\geometry\Ray.hpp">
+      <Filter>Geometry</Filter>
+    </ClInclude>
     <ClInclude Include="src\geometry\Sphere.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="src\geometry\Triangle.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="src\OBJ_Loader.hpp">
-      <Filter>External</Filter>
+    <ClInclude Include="src\third_party\ObjLoader.hpp">
+      <Filter>Third Party</Filter>
     </ClInclude>
     <ClInclude Include="src\acceleration\BVH.hpp">
       <Filter>Acceleration</Filter>

@@ -3,11 +3,11 @@
 #include <vector>
 #include <memory>
 #include <ctime>
-#include "Object.hpp"
-#include "Ray.hpp"
-#include "Bounds3.hpp"
-#include "Intersection.hpp"
-#include "Vector.hpp"
+#include "core/Vector.hpp"
+#include "geometry/Bounds3.hpp"
+#include "geometry/Intersection.hpp"
+#include "geometry/Object.hpp"
+#include "geometry/Ray.hpp"
 
 class Sampler;
 
@@ -38,7 +38,7 @@ public:
     // BVHAccel Private Data
     const int maxPrimsInNode;
     const SplitMethod splitMethod;
-    std::vector<Object*> primitives;
+    std::vector<Object*> temp_objs;
 
     void Sample(Intersection& pos, float& pdf, Sampler& sampler);
     void getSample(
@@ -54,8 +54,9 @@ struct BVHBuildNode {
     std::unique_ptr<BVHBuildNode> left;
     std::unique_ptr<BVHBuildNode> right;
 
-    // Not owning. Let Scene OR MeshTriangle owns the object
-    Object* object = nullptr;
+    // Scene or MeshTriangle owns the objects
+    // Populated for leaf nodes
+    std::vector<Object*> objects;
 
     float area = 0.f;
     int splitAxis = 0;

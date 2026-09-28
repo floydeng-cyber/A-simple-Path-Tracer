@@ -1,21 +1,22 @@
 ﻿#include <algorithm>
 #include <cassert>
+#include <cmath>
 
-#include "BVH.hpp"
-#include "SAH.hpp"
-#include "Sampler.hpp"
+#include "acceleration/BVH.hpp"
+#include "acceleration/SAH.hpp"
+#include "core/Sampler.hpp"
 
 BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
                    SplitMethod splitMethod)
     : maxPrimsInNode(std::min(255, maxPrimsInNode)), splitMethod(splitMethod),
-      primitives(std::move(p)) {
+      temp_objs(std::move(p)) {
 
     time_t start, stop;
     time(&start);
-    if (primitives.empty())
+    if (temp_objs.empty())
         return;
 
-    root = recursiveBuild(primitives);
+    root = recursiveBuild(temp_objs);
 
     time(&stop);
     double diff = difftime(stop, start);
@@ -28,59 +29,52 @@ BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
         hrs, mins, secs);
 }
 
-std::unique_ptr<BVHBuildNode> BVHAccel::recursiveBuild(std::vector<Object*> objects) {
+std::unique_ptr<BVHBuildNode> BVHAccel::recursiveBuild(
+    std::vector<Object*> objects) {
+    if (objects.empty()) return nullptr;
+
     auto node = std::make_unique<BVHBuildNode>();
-
-    //// Compute bounds of all primitives in BVH node
-    Bounds3 bounds;
-    for (int i = 0; i < objects.size(); ++i)
-        bounds = Union(bounds, objects[i]->getBounds());
-    if (objects.size() == 1) {
-        // Create leaf _BVHBuildNode_
-        node->bounds = objects[0]->getBounds();
-        node->object = objects[0];
-        node->left = nullptr;
-        node->right = nullptr;
-        node->area = objects[0]->getArea();
-        return node;
-    } else if (objects.size() == 2) {
-        node->left = recursiveBuild(std::vector{objects[0]});
-        node->right = recursiveBuild(std::vector{objects[1]});
-
-        node->bounds = Union(node->left->bounds, node->right->bounds);
-        node->area = node->left->area + node->right->area;
-        return node;
-    } else {    // more objects
-        auto middling = objects.end(); // initialize the split
-
-        if (splitMethod == SplitMethod::NAIVE) {
-            Bounds3 centroidBounds;
-            for (int i = 0; i < objects.size(); ++i)
-                centroidBounds = Union(centroidBounds, objects[i]->getBounds().Centroid());
-            int dim = centroidBounds.maxExtent();
-            std::sort(objects.begin(), objects.end(), [dim](auto f1, auto f2) {
-                return f1->getBounds().Centroid()[dim]
-                     < f2->getBounds().Centroid()[dim];
-                });
-            middling = objects.begin() + (objects.size() / 2);
-        } else {    // SplitMethod::SAH
-            middling = SAH::SAH_axis_split(objects, bounds);
-        }
-
-        auto beginning = objects.begin();
-        auto ending = objects.end();
-
-        auto leftshapes = std::vector<Object*>(beginning, middling);
-        auto rightshapes = std::vector<Object*>(middling, ending);
-
-        assert(objects.size() == (leftshapes.size() + rightshapes.size()));
-
-        node->left = recursiveBuild(leftshapes);
-        node->right = recursiveBuild(rightshapes);
-
-        node->bounds = Union(node->left->bounds, node->right->bounds);
-        node->area = node->left->area + node->right->area;
+    for (Object* obj : objects) {
+        node->bounds = Union(node->bounds, obj->getBounds());
+        node->area += obj->getArea();
     }
+
+    if (objects.size() == 1) {  // Only 1 object: create leaf _BVHBuildNode_
+        node->objects = std::move(objects);
+        return node;
+    }
+
+    auto obj_split = objects.end(); // initialize the split ('right'-side split)
+    if (splitMethod == SplitMethod::NAIVE) {
+        Bounds3 centroidBounds;
+        for (Object* obj : objects)
+            centroidBounds = Union(centroidBounds, obj->getBounds().Centroid());
+
+        const int widest_axis = centroidBounds.maxExtent();
+        obj_split = objects.begin() + objects.size()/2;
+
+        std::nth_element(objects.begin(), obj_split, objects.end(),
+            [widest_axis](Object* obj1, Object* obj2) {
+                return obj1->getBounds().Centroid()[widest_axis]
+                     < obj2->getBounds().Centroid()[widest_axis];
+            });
+    }
+    else {    // SplitMethod::SAH
+        obj_split = SAH::axis_split(objects, node->bounds);
+    }
+
+    // SAH rejected splitting || partition emptied either side
+    if (obj_split == objects.begin() || obj_split == objects.end()) {
+        node->objects = std::move(objects);
+        return node;
+    }
+
+    std::vector<Object*> left_objs(objects.begin(), obj_split);
+    std::vector<Object*> right_objs(obj_split, objects.end());
+
+    node->left = recursiveBuild(std::move(left_objs));
+    node->right = recursiveBuild(std::move(right_objs));
+
     return node;
 }
 
@@ -94,7 +88,7 @@ Intersection BVHAccel::Intersect(const Ray& ray) const {
 
 Intersection BVHAccel::getIntersection(const BVHBuildNode* node, const Ray& ray) const {
     // Traverse the BVH to find intersection
-    Intersection isect;
+    Intersection intersect;
 
     std::array<int, 3> dirIsNeg = {
         ray.direction.x < 0,
@@ -103,10 +97,16 @@ Intersection BVHAccel::getIntersection(const BVHBuildNode* node, const Ray& ray)
     };
 
     if (!node->bounds.IntersectP(ray, ray.direction_inv, dirIsNeg))
-        return isect;
+        return intersect;
 
-    if (node->left == nullptr && node->right == nullptr)
-        return node->object->getIntersection(ray);
+    if (node->left == nullptr && node->right == nullptr) { // Leaf node
+        for (Object* obj : node->objects) {
+            const Intersection hit = obj->getIntersection(ray);
+            if (hit.happened && hit.distance < intersect.distance)
+                intersect = hit;
+        }
+        return intersect;
+    }
 
     Intersection hitLeft = getIntersection(node->left.get(), ray);
     Intersection hitRight = getIntersection(node->right.get(), ray);
@@ -115,16 +115,35 @@ Intersection BVHAccel::getIntersection(const BVHBuildNode* node, const Ray& ray)
 }
 
 
-void BVHAccel::getSample(
-    const BVHBuildNode* node,
-    float samplePos,
-    Intersection& pos,
-    float& pdf,
-    Sampler& sampler) {
+void BVHAccel::getSample(const BVHBuildNode* node,
+    float samplePos, Intersection& pos,
+    float& pdf, Sampler& sampler) {
 
-    if(node->left == nullptr || node->right == nullptr) {
-        node->object->Sample(pos, pdf, sampler);
-        pdf *= node->area;
+    if(node->left == nullptr && node->right == nullptr) {
+        Object* selected_obj = nullptr;
+        float selected_area = 0.f;
+        float cumulative_area = 0.f;
+
+        for (Object* obj : node->objects) {
+            const float obj_area = obj->getArea();
+            if (!(obj_area > 0.f)) continue;
+
+            // Retain last positive-area object as a rounding fallback
+            selected_obj = obj;
+            selected_area = obj_area;
+            cumulative_area += obj_area;
+
+            if (samplePos < cumulative_area) break;
+        }
+
+        if (selected_obj == nullptr) {
+            pos = Intersection{};
+            pdf = 0.f;
+            return;
+        }
+
+        selected_obj->Sample(pos, pdf, sampler);
+        pdf *= selected_area;
         return;
     }
 
@@ -134,10 +153,14 @@ void BVHAccel::getSample(
         getSample(node->right.get(), samplePos - (node->left->area), pos, pdf, sampler);
 }
 
-void BVHAccel::Sample(Intersection& pos, float& pdf, Sampler& sampler){
+void BVHAccel::Sample(Intersection& pos, float& pdf, Sampler& sampler) {
+    if (!root || !(root->area > 0.f) || !std::isfinite(root->area))
+        return;
+
+    pos = Intersection{};
+    pdf = 0.f;
     const float samplePos = sampler.randFloat() * root->area;
 
     getSample(root.get(), samplePos, pos, pdf, sampler);
-
     pdf /= root->area;
 }

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <random>
-#include "Vector.hpp"
+#include "core/Vector.hpp"
 
 class Sampler {
 private:

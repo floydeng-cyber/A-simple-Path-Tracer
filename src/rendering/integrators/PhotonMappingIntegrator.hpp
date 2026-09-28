@@ -3,8 +3,8 @@
 #include <cstddef>
 #include <vector>
 
-#include "Integrator.hpp"
-#include "RenderSettings.hpp"
+#include "core/RenderSettings.hpp"
+#include "rendering/integrators/Integrator.hpp"
 
 struct Intersection;
 

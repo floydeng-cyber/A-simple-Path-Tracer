@@ -77,7 +77,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\core;$(ProjectDir)src\scene;$(ProjectDir)src\geometry;$(ProjectDir)src\acceleration;$(ProjectDir)src\rendering;$(ProjectDir)src\rendering\integrators;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -96,7 +96,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\core;$(ProjectDir)src\scene;$(ProjectDir)src\geometry;$(ProjectDir)src\acceleration;$(ProjectDir)src\rendering;$(ProjectDir)src\rendering\integrators;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -113,7 +113,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\core;$(ProjectDir)src\scene;$(ProjectDir)src\geometry;$(ProjectDir)src\acceleration;$(ProjectDir)src\rendering;$(ProjectDir)src\rendering\integrators;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +132,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\core;$(ProjectDir)src\scene;$(ProjectDir)src\geometry;$(ProjectDir)src\acceleration;$(ProjectDir)src\rendering;$(ProjectDir)src\rendering\integrators;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,19 +148,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\acceleration\SAH.hpp" />
-    <ClInclude Include="src\core\Bounds3.hpp" />
     <ClInclude Include="src\core\global.hpp" />
-    <ClInclude Include="src\core\Ray.hpp" />
     <ClInclude Include="src\core\RenderSettings.hpp" />
     <ClInclude Include="src\core\Sampler.hpp" />
     <ClInclude Include="src\core\Vector.hpp" />
-    <ClInclude Include="src\scene\Intersection.hpp" />
     <ClInclude Include="src\scene\Material.hpp" />
     <ClInclude Include="src\scene\Scene.hpp" />
     <ClInclude Include="src\geometry\Object.hpp" />
+    <ClInclude Include="src\geometry\Bounds3.hpp" />
+    <ClInclude Include="src\geometry\Intersection.hpp" />
+    <ClInclude Include="src\geometry\Ray.hpp" />
     <ClInclude Include="src\geometry\Sphere.hpp" />
     <ClInclude Include="src\geometry\Triangle.hpp" />
-    <ClInclude Include="src\OBJ_Loader.hpp" />
+    <ClInclude Include="src\third_party\ObjLoader.hpp" />
     <ClInclude Include="src\acceleration\BVH.hpp" />
     <ClInclude Include="src\rendering\Camera.hpp" />
     <ClInclude Include="src\rendering\Renderer.hpp" />

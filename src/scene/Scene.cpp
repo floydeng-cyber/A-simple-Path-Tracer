@@ -1,5 +1,5 @@
 ﻿#include "Scene.hpp"
-#include "Sampler.hpp"
+#include "core/Sampler.hpp"
 
 Vector3f sampleCosineHemisphere(const Vector3f& surfaceNormal, Sampler& sampler) {
     const float u1 = sampler.randFloat();   // distance from disk center
