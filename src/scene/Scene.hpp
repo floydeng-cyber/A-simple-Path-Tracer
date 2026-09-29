@@ -28,6 +28,7 @@ class Scene {
 private:
     std::vector<std::unique_ptr<Material>> materials;
     std::vector<std::unique_ptr<Object>> objects;
+    std::vector<Object*> lights;
     std::unique_ptr<BVHAccel> bvh;
 public: 
     Scene() = default;
@@ -47,7 +48,10 @@ public:
         auto object = std::make_unique<objType>(std::forward<Args>(args)...);
 
         objType& result = *object;
+
+        if (object->hasEmit()) lights.emplace_back(object.get());
         objects.emplace_back(std::move(object));
+
         return result;
     }
 

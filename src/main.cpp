@@ -63,8 +63,8 @@ int main() {
     scene.addObj<MeshTriangle>("assets/models/cornellbox/left.obj", &red);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/right.obj", &green);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/light.obj", &light);
-    scene.addObj<MeshTriangle>("assets/models/cornellbox/shortbox.obj", &white);
-    scene.addObj<MeshTriangle>("assets/models/cornellbox/tallbox.obj", &white);
+    //scene.addObj<MeshTriangle>("assets/models/cornellbox/shortbox.obj", &white);
+    //scene.addObj<MeshTriangle>("assets/models/cornellbox/tallbox.obj", &white);
 
     const auto sceneLoadEnd = Clock::now();
     scene.buildBVH();

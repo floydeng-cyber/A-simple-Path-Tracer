@@ -20,12 +20,13 @@ inline const char* renderModeName(RenderMode mode) {
 
 struct RenderSettings {
 	// Independent Setting Parameters
-	RenderMode renderMode = RenderMode::Hybrid;
+	RenderMode renderMode = RenderMode::PhotonMapping;
 	int		width  = 500;		// Image width  [pixel]
 	int		height = 500;		// Image height [pixel]
 	int		SPP	   = 100;		// Sample Per Pixel
 	int		MaxDepth = 32;		// Allow long internal-reflection chains.
-	float	rusRoulette = 0.8f;	// Russian Roulette for light bouncing
+	float	rusRoulette = 0.9f;	// Russian Roulette for light bouncing
+	int		savefirstNray = 2;	// Keep first N ray(s) against Russian Roulette
 	int		threadCount = 0;	// # of threads (default = 0 = hardware_concurrency)
 	float	fov = 40;			// vertical field of view
 

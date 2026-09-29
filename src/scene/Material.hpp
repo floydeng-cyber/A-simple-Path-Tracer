@@ -14,21 +14,17 @@ enum class ScatterEvent {
 
 // bidirectional scattering distribution function
 struct BSDFSample {
+
     Vector3f direction = Vector3f(0.f);
     Vector3f weight = Vector3f(0.f);
     float pdf = 0.f;
     ScatterEvent event = ScatterEvent::Invalid;
 
     bool isValid() const {
-        return event != ScatterEvent::Invalid
-            && pdf > 0.f
-            && direction.norm() > EPSILON;
+        return (event != ScatterEvent::Invalid)
+            && pdf > EPSILON
+            && direction.norm2() > EPSILON*EPSILON;
     }
-    
-    //bool isSpecular() const {
-    //    return event == ScatterEvent::Reflection
-    //        || event == ScatterEvent::Transmission;
-    //}
 };
 
 enum MaterialType {
@@ -46,31 +42,27 @@ struct DielectricBranches {
 
 class Material {
 private:
-
     // Compute reflection direction
-    Vector3f reflect(const Vector3f &I, const Vector3f &N) const {
-        return I - 2 * dotProduct(I, N) * N;
+    Vector3f reflect(const Vector3f& wi, const Vector3f& N) const {
+        return wi - 2 * dotProduct(wi, N) * N;
     }
 
-    // Compute refraction direction using Snell's law
-    //
-    // We need to handle with care the two possible situations:
-    //
-    //    - When the ray is inside the object
-    //
-    //    - When the ray is outside.
-    //
-    // If the ray is outside, you need to make cosi positive cosi = -N.I
-    //
-    // If the ray is inside, you need to invert the refractive indices and negate the normal N
-    Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior) const {
-        float cosi = clamp(-1, 1, dotProduct(I, N));
-        float etai = 1, etat = ior;
-        Vector3f n = N;
-        if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -N; }
-        float eta = etai / etat;
-        float k = 1 - eta * eta * (1 - cosi * cosi);
-        return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
+    // Compute refraction direction based on Snell's law
+    //    - Ray inside the object   :   Invert the normal & refractive index
+    //    - Ray outside the object  :   Invert the normal
+    Vector3f refract(const Vector3f& wi, const Vector3f& N, const float& ior) const {
+        float cosi = clamp(-1, 1, dotProduct(wi, N));
+        float n1 = 1, n2 = ior;
+        Vector3f surface_normal = N;
+        if (cosi < 0) {
+            cosi = -cosi;
+        } else {
+            std::swap(n1, n2); surface_normal= -N;
+        }
+        float eta = n1 / n2;
+        float k = 1 - eta*eta * (1 - cosi*cosi);    // discriminator
+        return (k < 0) ? reflect(wi, surface_normal)  // total internal reflection
+                       : eta * wi + (eta * cosi - sqrtf(k)) * surface_normal;
     }
 
     // Compute Fresnel equation
@@ -139,41 +131,49 @@ private:
     }
 
 public:
-    DielectricBranches dielectricBranches(const Vector3f& wi, Vector3f n,
-        const Vector3f& geometricNormal, TransportMode mode) const {
+    DielectricBranches dielectricBranches(
+        const Vector3f& wi,
+        Vector3f normal,
+        const Vector3f& geometricNormal,
+        TransportMode mode) const {
+
         // Enter/exit classification must agree with the actual surface.
-        if (dotProduct(wi,n)*dotProduct(wi,geometricNormal) <= 0.f)
-            n = geometricNormal;
-        float f;
-        fresnel(-wi,n,ior,f);
-        Vector3f r = normalize(reflect(-wi,n));
-        Vector3f t = refract(-wi,n,ior);
+        if (dotProduct(wi,normal)*dotProduct(wi,geometricNormal) <= 0.f)
+            normal = geometricNormal;
+        float reflect_coef;
+        fresnel(-wi,normal,ior,reflect_coef);
+        Vector3f refl_dir = normalize(reflect(-wi,normal));
+        Vector3f trans_dir = refract(-wi,normal,ior);
+
         // Smooth normals may send a ray through the wrong geometric hemisphere.
         // Use the geometric interface for the entire event in that case.
         const float side = dotProduct(wi,geometricNormal);
-        if (side*dotProduct(r,geometricNormal) <= 0.f ||
-            (f < 1.f && side*dotProduct(t,geometricNormal) >= 0.f)) {
-            n = geometricNormal;
-            fresnel(-wi,n,ior,f);
-            r = normalize(reflect(-wi,n));
-            t = refract(-wi,n,ior);
+        if (side*dotProduct(refl_dir,geometricNormal) <= 0.f ||
+           (reflect_coef < 1.f && side*dotProduct(trans_dir,geometricNormal) >= 0.f)) {
+            normal = geometricNormal;
+            fresnel(-wi,normal,ior,reflect_coef);
+            refl_dir = normalize(reflect(-wi,normal));
+            trans_dir = refract(-wi,normal,ior);
         }
         const float eta = side > 0.f ? 1.f/ior : ior;
         const float transmissionScale = mode == TransportMode::Radiance ? eta*eta : 1.f;
         return {
-            {r, Ks*f, f, ScatterEvent::Reflection},
-            {normalize(t), Ks*((1.f-f)*transmissionScale), 1.f-f, ScatterEvent::Transmission}
+            {refl_dir, Ks*reflect_coef, reflect_coef, ScatterEvent::Reflection},
+            {normalize(trans_dir), Ks*((1.f-reflect_coef)*transmissionScale), 1.f-reflect_coef, ScatterEvent::Transmission}
         };
     }
 
-    BSDFSample sampleSurface(const Vector3f& wi, const Vector3f& n,
-        const Vector3f& geometricNormal, Sampler& sampler,
-        TransportMode mode = TransportMode::Radiance) const {
-        if (m_type != DIELECTRIC) return sample(wi,n,sampler);
-        const auto branches = dielectricBranches(wi,n,geometricNormal,mode);
-        BSDFSample result = sampler.randFloat() < branches.reflection.pdf
-            ? branches.reflection : branches.transmission;
-        if (result.pdf > 0.f) result.weight = result.weight / result.pdf;
+    BSDFSample sampleSurface(const Vector3f& wi,              const Vector3f& normal,
+                             const Vector3f& geometricNormal, Sampler& sampler,
+                             TransportMode mode = TransportMode::Radiance) const {
+
+        if (m_type != DIELECTRIC) return sample(wi,normal,sampler);
+        const auto branches = dielectricBranches(wi,normal,geometricNormal,mode);
+        BSDFSample result = (sampler.randFloat() < branches.reflection.pdf)
+                          ? branches.reflection
+                          : branches.transmission;
+        if (result.pdf > EPSILON)
+            result.weight = result.weight / result.pdf;
         return result;
     }
 
@@ -224,10 +224,15 @@ bool Material::hasEmission() const {
 BSDFSample Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& sampler) const {
     switch(m_type){
         case DIFFUSE: {
-            const float u = sampler.randFloat(), phi = 2.f*M_PI*sampler.randFloat();
-            const float r = std::sqrt(u), z = std::sqrt(1.f-u);
-            const Vector3f direction = normalize(toWorld(Vector3f(r*std::cos(phi),r*std::sin(phi),z),N));
-            return {direction, Kd, z/M_PI, ScatterEvent::Diffuse};
+            const Vector2f gridSample = sampler.randDiffuse2D();
+            const float gridX = gridSample.x,
+                        phi = 2.f*M_PI*gridSample.y,
+                        radius = std::sqrtf(gridX),
+                        z = std::sqrt(1.f-gridX);
+            const Vector3f sample_dir = normalize(toWorld(
+                Vector3f(radius*std::cos(phi), radius*std::sin(phi), z), N
+            ));
+            return { sample_dir, Kd, z/M_PI, ScatterEvent::Diffuse };
         }
         case MICROFACET: {
             // uniform sample on the hemisphere
@@ -241,7 +246,7 @@ BSDFSample Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& samp
             const Vector3f wo = normalize(toWorld(woLocal, N));
 
             const float samplePDF = pdf(wi, wo, N);
-            if (samplePDF <= EPSILON) return {};
+            if (samplePDF < EPSILON) return {};
 
             const float cosTheta = std::max(0.f, dotProduct(N, wo));
             const Vector3f bsdfVal = eval(wi, wo, N);

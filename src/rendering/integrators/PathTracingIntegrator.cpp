@@ -38,9 +38,12 @@ Vector3f PathTracingIntegrator::radianceAtHit(
     // For indirect light : Sampling into space randomly
     // ===========================================================================
     Vector3f L_indir(0.f);
+    const float roulette_firstNsaved = (depth < setting.savefirstNray)
+                                       ? 1.f : setting.rusRoulette;
     if (depth <= setting.MaxDepth && !hit.m->hasEmission() && // check cur. depth AND emission
-        sampler.randFloat() <= setting.rusRoulette) { // Survive the Russian roulette?
+        sampler.randFloat() <= roulette_firstNsaved) { // Survive the Russian roulette?
         
+        sampler.setDepth(depth);
         const BSDFSample bsdf = hit.m->sampleSurface(wo, N_hit, hit.geometricNormal, sampler);
 
         if (bsdf.isValid()) {
@@ -49,7 +52,7 @@ Vector3f PathTracingIntegrator::radianceAtHit(
             L_indir =
                 radiance(pathRay, scene, sampler, depth+1) // Light      (next object)
                 * bsdf.weight
-                / setting.rusRoulette;
+                / roulette_firstNsaved;
         }
     }
 
@@ -57,40 +60,41 @@ Vector3f PathTracingIntegrator::radianceAtHit(
 
     // For direct light : Sampling light sources randomly
     // ===========================================================================
-    Intersection intersect_light;   // Initiate Detection of light source
+    Intersection sampled_light;   // Initiate Detection of light source
     float pdf_light = 0.f;          // Initiate Probablity Distribution Function
-    scene.sampleLight(intersect_light, pdf_light, sampler); // Chose one light source (changed inputted values)
+    scene.sampleLight(sampled_light, pdf_light, sampler); // Area sampling of one light source
 
     Vector3f L_dir(0.f); // Direct light: If shadow ray hits the light source
     if (pdf_light > EPSILON) {
-        const Vector3f lightOffset = intersect_light.coords - p_hit;
-        const float hit_light_dist2 = dotProduct(lightOffset, lightOffset);
-        const float hit_light_dist = sqrtf(hit_light_dist2);
+        const Vector3f lightOffset = sampled_light.coords - p_hit;
+        float hit_light_dist2 = dotProduct(lightOffset, lightOffset);
 
-        if (hit_light_dist2 > EPSILON) {
-            const Vector3f ws = normalize(lightOffset);
-            const Vector3f NN = intersect_light.normal;
-
-            const Ray shadow_ray(offsetRayOrigin(hit, ws), ws);
-            const Intersection shadow_hit = scene.intersect(shadow_ray);
-
-            const float dist_diff = std::abs(
-                static_cast<float>(shadow_hit.distance) - hit_light_dist
-            );
+        if (hit_light_dist2 > 2.5e-5f) {    // away enough from sampled light source
+            const Vector3f ws = normalize(lightOffset);    // direction towards the light source
+            const Vector3f N_light = sampled_light.normal; // Normal of the light source
 
             const float cos_surface = std::max(0.f, dotProduct(ws, N_hit));
-            const float cos_light = std::max(0.f, dotProduct(-ws, NN));
+            const float cos_light = std::max(0.f, dotProduct(-ws, N_light));
 
-            const bool isVisible = shadow_hit.happened &&
-                                   dist_diff < 0.005f;
+            if (cos_surface > 0.f && cos_light > 0.f) {
+                const Ray shadow_ray(offsetRayOrigin(hit, ws), ws);
+                const Intersection shadow_hit = scene.intersect(shadow_ray);
 
-            if (isVisible && cos_surface > 0.f && cos_light > 0.f)
-                L_dir = intersect_light.emit          // Emission           (light source)
-                      * (hit.m->eval(wo, ws, N_hit)) // BRDF                (hit surface)
-                      * cos_surface                 // Direct-ness          (ray onto hit surface)
-                      * cos_light                  // Direct-ness           (ray from area light)
-                      / hit_light_dist2           // Surface-light distance (squared inverse)
-                      / pdf_light;               // PDF                     (sampled light source)
+                const float dist_diff = std::abs(
+                    static_cast<float>(shadow_hit.distance) - sqrtf(hit_light_dist2)
+                );
+
+                const bool isVisible = shadow_hit.happened && (dist_diff < 5e-3f);
+
+                if (isVisible) {
+                    L_dir = sampled_light.emit          // Emission           (light source)
+                        * (hit.m->eval(wo, ws, N_hit)) // BRDF                (hit surface)
+                        * cos_surface                 // Direct-ness          (ray onto hit surface)
+                        * cos_light                  // Direct-ness           (ray from area light)
+                        / hit_light_dist2           // Surface-light distance (squared inverse)
+                        / pdf_light;               // PDF                     (sampled light source)
+                }
+            }
         }
     }
 

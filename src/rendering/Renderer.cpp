@@ -32,32 +32,32 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
         ? setting.threadCount // Explicit thread count.
         : static_cast<int>(std::max(1u, std::thread::hardware_concurrency())); // Otherwise use the CPU count.
 
-    std::atomic<int> completedRows{0}; // Rows completed by all workers.
-    const auto integrationStart = Clock::now(); // Start integration timer.
+    std::atomic<int> completedRows{0}; // Rows completed by all workers
+    const auto integrationStart = Clock::now(); // Start integration timer
 
-    auto renderRows = [&](int firstRow) { // Each worker renders every threadCount-th row.
-        for (int j = firstRow; j < setting.height; j += threadCount) { // Visit this worker's rows.
-            for (int i = 0; i < setting.width; ++i) { // Visit each pixel in the row.
-                const int frameIndex = j * setting.width + i; // Convert 2D position to array index.
-
+    auto renderRows = [&](int firstRow) { // Each worker renders every threadCount-th row
+        for (int j = firstRow; j < setting.height; j += threadCount) { // Visit this worker's rows
+            for (int i = 0; i < setting.width; ++i) { // Visit each pixel in the row
+                const int frameIndex = j * setting.width + i; // Convert 2D position to array index
                 Sampler sampler(Sampler::makeSeed(
                     setting.randSeed, static_cast<std::uint64_t>(frameIndex)));
-                for (int sampleIndex = 0; sampleIndex < setting.SPP; ++sampleIndex) { // Trace all pixel samples.
-                    const Vector2f deviation = sampler.rand2D(); // Random subpixel offset.
-                    const float normalizedX = // Horizontal camera coordinate.
-                        (static_cast<float>(i) + deviation.x) / setting.width; // Normalize jittered x.
-                    const float normalizedY = // Vertical camera coordinate.
-                        (static_cast<float>(j) + deviation.y) / setting.height; // Normalize jittered y.
-                    const Ray primaryRay = camera.generateRay(normalizedX, normalizedY); // Create camera ray.
+                for (int sample_idx = 0; sample_idx < setting.SPP; ++sample_idx) { // Trace all pixel samples
+                    sampler.startGrid(sample_idx, setting.SPP);
+                    const Vector2f XYdeviation = sampler.rand2D(); // Random subpixel offset
+                    const float normalizedX = // Horizontal camera coordinate
+                        (static_cast<float>(i) + XYdeviation.x) / setting.width; // Normalize jittered x
+                    const float normalizedY = // Vertical camera coordinate
+                        (static_cast<float>(j) + XYdeviation.y) / setting.height; // Normalize jittered y
+                    const Ray primaryRay = camera.generateRay(normalizedX, normalizedY); // Create camera ray
 
                     framebuffer[frameIndex] += // Accumulate the averaged sample.
-                        integrator.radiance(primaryRay, scene, sampler, 0) * sampleWeight; // Evaluate radiance.
-                } // End sample loop.
-            } // End pixel loop.
+                        integrator.radiance(primaryRay, scene, sampler, 0) * sampleWeight; // Evaluate radiance
+                } // End sampling loop
+            } // End pixel loop
 
-            ++completedRows; // Record the finished row.
-        } // End row loop.
-    }; // End worker function.
+            ++completedRows; // Acculmulate finished row
+        } // End row loop
+    }; // End worker function
 
     std::vector<std::thread> threads; // Worker collection.
     threads.reserve(threadCount); // Avoid vector reallocations.

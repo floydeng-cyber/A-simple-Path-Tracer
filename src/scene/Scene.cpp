@@ -47,28 +47,25 @@ Intersection Scene::intersect(const Ray& ray) const {
 void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
     float emit_area_sum = 0.f;
 
-    for (const auto& obj : objects) {
-        if (obj->hasEmit())  // accumulate emisstion area
-            emit_area_sum += obj->getArea();
+    for (const auto& obj : lights) {
+        emit_area_sum += obj->getArea(); // accumulate emisstion area
     }
-    if (emit_area_sum <= 0.f) {
+    if (emit_area_sum < EPSILON) {  // fail to find sufficient light source area
         pos = Intersection();
         pdf = 0.f;
         return;
     }
 
-    const float samplePos = sampler.randFloat() * emit_area_sum;
-    float accumulate_emit_area = 0.f;
+    const float sampleLightWidth = sampler.randFloat() * emit_area_sum;
+    float accumulateLightWidth = 0.f;
     
-    for (const auto& obj : objects) {
-        if (obj->hasEmit()) {
-            accumulate_emit_area += obj->getArea();
+    for (const auto& obj : lights) {
+        accumulateLightWidth += obj->getArea();
 
-            if (samplePos <= accumulate_emit_area){
-                obj->Sample(pos, pdf, sampler);
-                pdf *= obj->getArea() / emit_area_sum;
-                return;
-            }
+        if (accumulateLightWidth >= sampleLightWidth) { // pick the emitssive obj when exceeding sample width
+            obj->Sample(pos, pdf, sampler);         // area sampling
+            pdf *= obj->getArea() / emit_area_sum;  // portion within total emissive area
+            return;
         }
     }
     pos = Intersection();

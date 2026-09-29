@@ -5,7 +5,7 @@
 #undef M_PI
 #define M_PI 3.141592653589793f
 
-extern const float  EPSILON;
+extern const float EPSILON;
 const float kInfinity = std::numeric_limits<float>::max();
 
 inline float clamp(const float &lo, const float &hi, const float &v) {
