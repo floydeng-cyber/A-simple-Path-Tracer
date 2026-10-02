@@ -12,7 +12,7 @@
 
 class Sampler;
 
-struct PhotonEmissionSample {
+struct PhotonEmitSample {
     Vector3f position = Vector3f(0.f);
     Vector3f normal = Vector3f(0.f);
     Vector3f direction = Vector3f(0.f);
@@ -60,5 +60,5 @@ public:
 
     void sampleLight(Intersection &pos, float &pdf, Sampler& sampler) const;
 
-    PhotonEmissionSample samplePhotonEmission(std::size_t photonCount, Sampler& sampler) const;
+    PhotonEmitSample samplePhotonEmission(std::size_t photonCount, Sampler& sampler) const;
 };

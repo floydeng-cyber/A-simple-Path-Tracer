@@ -85,8 +85,8 @@ int main() {
     }
 
     const auto preprocessStart = Clock::now();
-    Sampler preprocessSampler(settings.photonSeed);
-    integrator->preProcess(scene, preprocessSampler);
+    Sampler preprocessSampler(settings.randSeed);
+    integrator->buildPhotonMaps(scene, preprocessSampler);
     const auto preprocessEnd = Clock::now();
 
     Renderer renderer;

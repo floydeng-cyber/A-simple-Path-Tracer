@@ -40,10 +40,12 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
             for (int i = 0; i < setting.width; ++i) { // Visit each pixel in the row
                 const int frameIndex = j * setting.width + i; // Convert 2D position to array index
                 Sampler sampler(Sampler::makeSeed(
-                    setting.randSeed, static_cast<std::uint64_t>(frameIndex)));
+                    setting.randSeed, static_cast<std::uint64_t>(frameIndex)
+                ));
+
                 for (int sample_idx = 0; sample_idx < setting.SPP; ++sample_idx) { // Trace all pixel samples
                     sampler.startGrid(sample_idx, setting.SPP);
-                    const Vector2f XYdeviation = sampler.rand2D(); // Random subpixel offset
+                    const Vector2f XYdeviation = sampler.randDiffuse2D(); // Random subpixel offset
                     const float normalizedX = // Horizontal camera coordinate
                         (static_cast<float>(i) + XYdeviation.x) / setting.width; // Normalize jittered x
                     const float normalizedY = // Vertical camera coordinate
@@ -81,21 +83,22 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
     const auto imageWriteStart = Clock::now(); // Start output timer.
 
     const std::filesystem::path outputPath(setting.outputFile); // Parse output path.
-    if (outputPath.has_parent_path()) { // Check for an output directory.
+    if (outputPath.has_parent_path()) { // Check for output directory
         std::filesystem::create_directories(outputPath.parent_path()); // Create it when needed.
-    } // End directory check.
+    }
 
     FILE* output = nullptr; // Output file handle.
-    fopen_s(&output, setting.outputFile.c_str(), "wb"); // Open binary output.
-    if (output == nullptr) { // Check for open failure.
-        throw std::runtime_error("Unable to open render output: " + setting.outputFile); // Report the failed path.
-    } // End error check.
+    fopen_s(&output, setting.outputFile.c_str(), "wb"); // Open binary output
+    if (output == nullptr) {
+        throw std::runtime_error("Unable to open render output: " + setting.outputFile); // Report failed path
+    }
 
-    std::fprintf(output, "P6\n%d %d\n255\n", setting.width, setting.height); // Write PPM header.
-    const auto toByte = [](float value) { // Convert a color channel to a display byte.
-        return static_cast<unsigned char>( // Convert the result to 0-255 storage.
-            255 * std::pow(clamp(0, 1, value), 0.6f)); // Clamp, gamma-correct, and scale.
-    }; // End channel converter.
+    std::fprintf(output, "P6\n%d %d\n255\n", setting.width, setting.height); // Write PPM header
+
+    const auto toByte = [](float value) { // Convert a color channel to a display byte
+        return static_cast<unsigned char>(
+            255 * std::pow(clamp(0, 1, value), 0.6f));
+    };
 
     for (const Vector3f& pixel : framebuffer) { // Write each pixel.
         const unsigned char color[3] = { // RGB byte triplet.

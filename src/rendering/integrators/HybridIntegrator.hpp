@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "core/RenderSettings.hpp"
 #include "rendering/integrators/Integrator.hpp"
@@ -9,7 +9,7 @@ class HybridIntegrator final : public Integrator {
 public:
     explicit HybridIntegrator(const RenderSettings& settings);
 
-    void preProcess(const Scene& scene, Sampler& sampler) override;
+    void buildPhotonMaps(const Scene& scene, Sampler& sampler) override;
 
     Vector3f radiance(
         const Ray& ray,

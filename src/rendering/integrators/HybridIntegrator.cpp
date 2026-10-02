@@ -9,10 +9,10 @@
 HybridIntegrator::HybridIntegrator(const RenderSettings& renderSettings)
     : settings(renderSettings),
       pathTracer(renderSettings),
-      photonMapper(renderSettings, PhotonMapBuildPolicy::CausticsOnly) {}
+      photonMapper(renderSettings, true) {} // Build only caustic photons for the hybrid.
 
-void HybridIntegrator::preProcess(const Scene& scene, Sampler& sampler) {
-    photonMapper.preProcess(scene, sampler);
+void HybridIntegrator::buildPhotonMaps(const Scene& scene, Sampler& sampler) {
+    photonMapper.buildPhotonMaps(scene, sampler);
 }
 
 Vector3f HybridIntegrator::radiance(
@@ -42,5 +42,5 @@ Vector3f HybridIntegrator::radiance(
     }
 
     return pathTracer.radianceAtHit(ray, hit, scene, sampler, depth)
-         + photonMapper.estimateCaustic(hit);
+         + photonMapper.getPhotonInRadius(photonMapper.causticMap, hit);
 }

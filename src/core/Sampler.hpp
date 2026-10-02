@@ -37,6 +37,7 @@ public:
 		grid_idx = idx;
 		grid_wid = (int)sqrt(spp);
 		if (grid_wid*grid_wid != spp) grid_wid = 1;
+		grid_depth = 0;
 	}
 	void setDepth(int depth) { grid_depth = depth; }
 

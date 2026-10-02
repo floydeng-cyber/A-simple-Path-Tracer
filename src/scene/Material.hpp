@@ -21,7 +21,7 @@ struct BSDFSample {
     ScatterEvent event = ScatterEvent::Invalid;
 
     bool isValid() const {
-        return (event != ScatterEvent::Invalid)
+        return event != ScatterEvent::Invalid
             && pdf > EPSILON
             && direction.norm2() > EPSILON*EPSILON;
     }
@@ -167,11 +167,23 @@ public:
                              const Vector3f& geometricNormal, Sampler& sampler,
                              TransportMode mode = TransportMode::Radiance) const {
 
-        if (m_type != DIELECTRIC) return sample(wi,normal,sampler);
+        if (m_type != DIELECTRIC)
+            return sample(wi,normal,sampler);
         const auto branches = dielectricBranches(wi,normal,geometricNormal,mode);
-        BSDFSample result = (sampler.randFloat() < branches.reflection.pdf)
-                          ? branches.reflection
-                          : branches.transmission;
+
+        const float reflect_coef = branches.reflection.pdf;
+        const float sample_reflect = (reflect_coef < EPSILON || reflect_coef > 1.f-EPSILON)
+                                   ? reflect_coef
+                                   : clamp(0.1f, 0.9f, reflect_coef);
+
+        BSDFSample result = branches.transmission;
+        result.pdf = 1.f - sample_reflect;
+
+        if (sampler.randFloat() < sample_reflect) {
+            BSDFSample result = branches.reflection;
+            result.pdf = sample_reflect;
+        }
+
         if (result.pdf > EPSILON)
             result.weight = result.weight / result.pdf;
         return result;

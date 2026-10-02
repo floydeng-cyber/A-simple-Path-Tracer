@@ -17,15 +17,14 @@ Vector3f PathTracingIntegrator::radiance(
     Sampler& sampler,
     int depth) const {
 
-    if (depth > setting.MaxDepth)
-        return Vector3f(0.f);   // max depth reached; return 0's
+    if (depth > setting.MaxDepth) return Vector3f(0.f); // max depth reached; return 0's
     
     return radianceAtHit(ray, scene.intersect(ray), scene, sampler, depth);
 }
 
 Vector3f PathTracingIntegrator::radianceAtHit(
-    const Ray& ray, const Intersection& hit,
-    const Scene& scene, Sampler& sampler, int depth) const {
+    const Ray& ray,     const Intersection& hit,
+    const Scene& scene, Sampler& sampler,           int depth) const {
 
     if (!hit.happened || depth > setting.MaxDepth)        // If not intersecting,
         return Vector3f(0.f); // return no light/color
@@ -38,9 +37,9 @@ Vector3f PathTracingIntegrator::radianceAtHit(
     // For indirect light : Sampling into space randomly
     // ===========================================================================
     Vector3f L_indir(0.f);
-    const float roulette_firstNsaved = (depth < setting.savefirstNray)
+    const float roulette_firstNsaved = (depth < setting.savefirstN)
                                        ? 1.f : setting.rusRoulette;
-    if (depth <= setting.MaxDepth && !hit.m->hasEmission() && // check cur. depth AND emission
+    if (!hit.m->hasEmission() &&    // check cur. depth AND emission
         sampler.randFloat() <= roulette_firstNsaved) { // Survive the Russian roulette?
         
         sampler.setDepth(depth);
@@ -84,16 +83,13 @@ Vector3f PathTracingIntegrator::radianceAtHit(
                     static_cast<float>(shadow_hit.distance) - sqrtf(hit_light_dist2)
                 );
 
-                const bool isVisible = shadow_hit.happened && (dist_diff < 5e-3f);
-
-                if (isVisible) {
-                    L_dir = sampled_light.emit          // Emission           (light source)
-                        * (hit.m->eval(wo, ws, N_hit)) // BRDF                (hit surface)
-                        * cos_surface                 // Direct-ness          (ray onto hit surface)
-                        * cos_light                  // Direct-ness           (ray from area light)
-                        / hit_light_dist2           // Surface-light distance (squared inverse)
-                        / pdf_light;               // PDF                     (sampled light source)
-                }
+                if (shadow_hit.happened && (dist_diff < 5e-3f))
+                    L_dir = sampled_light.emit            // Emission           (light source)
+                          * (hit.m->eval(wo, ws, N_hit)) // BRDF                (hit surface)
+                          * cos_surface                 // Direct-ness          (ray onto hit surface)
+                          * cos_light                  // Direct-ness           (ray from area light)
+                          / hit_light_dist2           // Surface-light distance (squared inverse)
+                          / pdf_light;               // PDF                     (sampled light source)
             }
         }
     }

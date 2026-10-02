@@ -72,10 +72,10 @@ void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
     pdf = 0.f;
 }
 
-PhotonEmissionSample Scene::samplePhotonEmission(
+PhotonEmitSample Scene::samplePhotonEmission(
     std::size_t photonCount, Sampler& sampler) const {
 
-    PhotonEmissionSample sample;
+    PhotonEmitSample sample;
     if (photonCount == 0) return sample;
 
     Intersection lightPoint;
@@ -89,7 +89,7 @@ PhotonEmissionSample Scene::samplePhotonEmission(
     const float cosTheta = std::max(0.f, dotProduct(sample.normal, sample.direction));
 
     sample.pdfDir = cosTheta / M_PI;
-    if (sample.pdfDir <= EPSILON) return PhotonEmissionSample{};
+    if (sample.pdfDir <= EPSILON) return PhotonEmitSample{};
 
     const float jointPDF = sample.pdfArea * sample.pdfDir;
 
