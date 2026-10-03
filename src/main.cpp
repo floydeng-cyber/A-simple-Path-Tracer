@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <string>
 
 #include "core/RenderSettings.hpp"
 #include "core/Sampler.hpp"
@@ -13,11 +14,32 @@
 #include "rendering/integrators/PhotonMappingIntegrator.hpp"
 #include "scene/Scene.hpp"
 
-int main() {
+int main(int argc, char* argv[]) {
     using Clock = std::chrono::steady_clock;
     const auto applicationStart = Clock::now();
 
     RenderSettings settings;
+
+    if (argc > 2) {
+        std::cerr << "Usage : " << argv[0] << " | "
+                  << "Wanted:   [ path | photon | hybrid ]\n";
+        return 1;
+    } else if (argc == 2) {
+        const std::string mode = argv[1];
+
+        if (mode == "path" || mode == "Path")
+            settings.renderMode = RenderMode::PathTracing;
+        else if (mode == "photon" || mode == "Photon")
+            settings.renderMode = RenderMode::PhotonMapping;
+        else if (mode == "hybrid" || mode == "Hybrid")
+            settings.renderMode = RenderMode::Hybrid;
+        else {
+            std::cerr << "Unknown render mode: " << mode << '\n';
+            return 1;
+        }
+        settings.outputFile = std::string("render_img/cornellBox_")
+                            + renderModeName(settings.renderMode) + ".ppm";
+    }
 
     Camera camera(
         Vector3f(278.0f, 273.0f, -800.0f),
@@ -57,7 +79,7 @@ int main() {
     scene.addObj<MeshTriangle>(
         "assets/models/complexSpheres.obj",
         &sphereMaterial,
-        MeshTriangleOptions{true, settings.smoothMesh});
+        MeshTriangleOptions{true, true}); // Two-sided mesh with smooth normals.
 
     scene.addObj<MeshTriangle>("assets/models/cornellbox/floor.obj", &white);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/left.obj", &red);

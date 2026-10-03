@@ -26,7 +26,9 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
 
     std::vector<Vector3f> framebuffer(setting.width * setting.height); // Pixel colors.
     const float sampleWeight = 1.f / static_cast<float>(setting.SPP); // Weight of one sample.
-    std::cout << "SPP: " << setting.SPP << "\n"; // Print sample count.
+    std::cout << "SPP: " << setting.SPP << " | "
+              << "Renderer: " << renderModeName(setting.renderMode)
+              << "\n"; // Print sample count.
 
     const int threadCount = setting.threadCount > 0 // Use requested threads when provided.
         ? setting.threadCount // Explicit thread count.
@@ -45,15 +47,15 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
 
                 for (int sample_idx = 0; sample_idx < setting.SPP; ++sample_idx) { // Trace all pixel samples
                     sampler.startGrid(sample_idx, setting.SPP);
-                    const Vector2f XYdeviation = sampler.randDiffuse2D(); // Random subpixel offset
-                    const float normalizedX = // Horizontal camera coordinate
-                        (static_cast<float>(i) + XYdeviation.x) / setting.width; // Normalize jittered x
-                    const float normalizedY = // Vertical camera coordinate
-                        (static_cast<float>(j) + XYdeviation.y) / setting.height; // Normalize jittered y
+                    const Vector2f XYdeviation = sampler.randDiffuse2D();
+                    const float normalizedX =
+                        (static_cast<float>(i) + XYdeviation.x) / setting.width;
+                    const float normalizedY =
+                        (static_cast<float>(j) + XYdeviation.y) / setting.height;
                     const Ray primaryRay = camera.generateRay(normalizedX, normalizedY); // Create camera ray
 
                     framebuffer[frameIndex] += // Accumulate the averaged sample.
-                        integrator.radiance(primaryRay, scene, sampler, 0) * sampleWeight; // Evaluate radiance
+                        integrator.radiance(primaryRay, scene, sampler, 0) * sampleWeight;
                 } // End sampling loop
             } // End pixel loop
 
@@ -61,33 +63,32 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
         } // End row loop
     }; // End worker function
 
-    std::vector<std::thread> threads; // Worker collection.
-    threads.reserve(threadCount); // Avoid vector reallocations.
-    for (int threadIndex = 0; threadIndex < threadCount; ++threadIndex) { // Start each worker.
-        threads.emplace_back(renderRows, threadIndex); // Construct the thread directly in the vector.
-    } // End worker-start loop.
-
-    while (completedRows.load() < setting.height) { // Update progress until rendering finishes.
-        UpdateProgress(completedRows.load() / static_cast<float>(setting.height)); // Show completion fraction.
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Refresh per second.
-    } // End progress loop.
-
-    for (std::thread& worker : threads) { // Visit every worker.
-        worker.join(); // Wait for it to finish.
-    } // End join loop.
-
-    UpdateProgress(1.f); // Show 100%.
-    std::cout << "\n"; // Finish the progress line.
-    const auto integrationEnd = Clock::now(); // Stop integration timer.
-
-    const auto imageWriteStart = Clock::now(); // Start output timer.
-
-    const std::filesystem::path outputPath(setting.outputFile); // Parse output path.
-    if (outputPath.has_parent_path()) { // Check for output directory
-        std::filesystem::create_directories(outputPath.parent_path()); // Create it when needed.
+    std::vector<std::thread> threads; // Worker collection
+    threads.reserve(threadCount);
+    for (int threadIndex = 0; threadIndex < threadCount; ++threadIndex) {
+        threads.emplace_back(renderRows, threadIndex); // Construct the thread directly in the vector
     }
 
-    FILE* output = nullptr; // Output file handle.
+    while (completedRows.load() < setting.height) { // Update progress until rendering finishes.
+        UpdateProgress(completedRows.load() / static_cast<float>(setting.height)); // Show completion fraction
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    } // End progress loop.
+
+    for (std::thread& worker : threads)
+        worker.join(); // Wait for it to finish
+    
+    UpdateProgress(1.f); // Show 100%
+    std::cout << "\n";
+    const auto integrationEnd = Clock::now(); // Stop integration timer
+
+    const auto imageWriteStart = Clock::now(); // Start output timer
+
+    const std::filesystem::path outputPath(setting.outputFile); // Parse output path
+    if (outputPath.has_parent_path()) { // Check for output directory
+        std::filesystem::create_directories(outputPath.parent_path()); // Create it when needed
+    }
+
+    FILE* output = nullptr; // Output file handle
     fopen_s(&output, setting.outputFile.c_str(), "wb"); // Open binary output
     if (output == nullptr) {
         throw std::runtime_error("Unable to open render output: " + setting.outputFile); // Report failed path

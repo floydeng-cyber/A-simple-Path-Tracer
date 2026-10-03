@@ -20,7 +20,7 @@ inline const char* renderModeName(RenderMode mode) {
 
 struct RenderSettings {
 	// Independent Setting Parameters
-	RenderMode renderMode = RenderMode::PhotonMapping;
+	RenderMode renderMode = RenderMode::Hybrid;
 	int		width  = 500;		// Image width  [pixel]
 	int		height = 500;		// Image height [pixel]
 	int		SPP	   = 64;		// Sample Per Pixel
@@ -36,9 +36,7 @@ struct RenderSettings {
 	std::uint64_t randSeed = 42;	// ultimate answer of everything
 
 	std::size_t photonCount = 250000;
-	float photonGatherRadius = 30.f;
-	bool photonConeFilter = true;
-	bool smoothMesh = true;
+	float photonGatherRadius = 25.f;
 	int specularBothWayDepth = 4;
 
 	// Dependent Parameters

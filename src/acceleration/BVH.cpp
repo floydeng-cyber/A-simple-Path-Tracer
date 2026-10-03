@@ -24,9 +24,10 @@ BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
     int mins = ((int)diff / 60) - (hrs * 60);
     int secs = (int)diff - (hrs * 3600) - (mins * 60);
 
-    printf(
-        "\rBVH Generation complete: \nTime Taken: %i hrs, %i mins, %i secs\n\n",
-        hrs, mins, secs);
+    //printf("\rBVH Generation complete: \nTime Taken: %i hrs, %i mins, %i secs\n\n",
+    //        hrs, mins, secs);
+    printf("\rBVH Generation complete: \nTime Taken: %i secs\n\n",
+                                                        secs);
 }
 
 std::unique_ptr<BVHBuildNode> BVHAccel::recursiveBuild(

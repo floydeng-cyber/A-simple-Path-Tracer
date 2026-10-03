@@ -116,7 +116,7 @@ void PhotonMappingIntegrator::buildPhotonMaps(const Scene& scene, Sampler& sampl
     std::cout << "Caustic photons stored: " << causticMap.size() << "\n";
     if (!trackCausticsOnly) {
         buildPhotonTree(diffuseMap, 0, diffuseMap.size(), 0);
-        std::cout << "Global photons stored: " << diffuseMap.size() << "\n";
+        std::cout << "Global  photons stored: " << diffuseMap.size() << "\n";
     }
 }
 
@@ -142,32 +142,24 @@ Vector3f PhotonMappingIntegrator::getPhotonInRadius(
             if (dist2 <= radius2 &&
                 dotProduct(normal, photon.normal) > 0.85f &&
                 dotProduct(normal, photon.incoming) > 0.f) {
-                powerSum += photon.power
-                    * (setting.photonConeFilter
-                      ? 1.f - std::sqrt(dist2 / radius2)
-                      : 1.f);
+                powerSum += photon.power;
             }
 
             const int axis = depth % 3;
             const float axisDistance = hit.coords[axis] - photon.position[axis];
+            const bool overlapsPlane = axisDistance * axisDistance <= radius2;
 
-            if (axisDistance <= 0.f) {
+            if (axisDistance <= 0.f || overlapsPlane) {
                 self(self, begin, middle, depth + 1, powerSum);
-                if (axisDistance * axisDistance <= radius2) {
-                    self(self, middle + 1, end, depth + 1, powerSum);
-                }
             }
-            else {
+            if (axisDistance > 0.f || overlapsPlane) {
                 self(self, middle + 1, end, depth + 1, powerSum);
-                if (axisDistance * axisDistance <= radius2) {
-                    self(self, begin, middle, depth + 1, powerSum);
-                }
             }
         };
 
     gatherRange(gatherRange, 0, photons.size(), 0, powerSum);
-    // Cone kernel w(d)=1-d/r integrates to pi*r^2/3 on a plane.
-    return powerSum * ((setting.photonConeFilter ? 3.f : 1.f) / (M_PI * radius2));
+    // Uniform disk kernel integrates to pi*r^2 on a plane.
+    return powerSum * (1.f / (M_PI * radius2));
 }
 
 Vector3f PhotonMappingIntegrator::radiance(
@@ -178,7 +170,11 @@ Vector3f PhotonMappingIntegrator::radiance(
 
     const Intersection hit = scene.intersect(ray);
     if (!hit.happened || hit.m == nullptr) return Vector3f(0.f);
-    if (hit.m->hasEmission())   return hit.m->getEmission();
+
+    if (hit.m->hasEmission())
+        return (depth == 0)
+            ? hit.m->getEmission().getClamped()
+            : hit.m->getEmission();
 
     // Store properties of the surface hit
     const Vector3f N_hit = hit.normal;
@@ -196,19 +192,9 @@ Vector3f PhotonMappingIntegrator::radiance(
             if (bothBranch.reflection.isValid()) {
                 const Ray ray_r(offsetRayOrigin(hit, bothBranch.reflection.direction),
                     bothBranch.reflection.direction);
-                Vector3f L_reflect = radiance(
-                    ray_r, scene, sampler, depth + 1
-                ) * bothBranch.reflection.weight;
-                //L_specular += Vector3f{
-                //    L_reflect.x / (1.f + L_reflect.x/15),
-                //    L_reflect.y / (1.f + L_reflect.y/15),
-                //    L_reflect.z / (1.f + L_reflect.z/15)
-                //};
-                L_specular += 18 * Vector3f{
-                    1 / (1.f + exp(-L_reflect.x / 5)) -0.5f,
-                    1 / (1.f + exp(-L_reflect.y / 5)) -0.5f,
-                    1 / (1.f + exp(-L_reflect.z / 5)) -0.5f
-                };
+
+                L_specular += radiance(ray_r, scene, sampler, depth + 1
+                              ) * bothBranch.reflection.weight;
             }
             if (bothBranch.transmission.isValid()) {
                 const Ray ray_r(offsetRayOrigin(hit, bothBranch.transmission.direction),
@@ -222,12 +208,24 @@ Vector3f PhotonMappingIntegrator::radiance(
 
         sampler.setDepth(depth);
         const BSDFSample bsdf = hit.m->sampleSurface(wo, N_hit, hit.geometricNormal, sampler);
-
         if (!bsdf.isValid())    return Vector3f(0.f);
 
         const Ray pathRay(offsetRayOrigin(hit, bsdf.direction), bsdf.direction);
 
-        return radiance(pathRay, scene, sampler, depth + 1) * bsdf.weight;
+        Vector3f L_specular = radiance(
+            pathRay, scene, sampler, depth + 1) * bsdf.weight;
+
+        if (hit.m->getType() == DIELECTRIC) {
+            constexpr float threshold = 3.f;
+            constexpr float extend = 2.f;
+            float peak = std::max(L_specular.x, std::max(L_specular.y, L_specular.z));
+            if (peak > threshold) {
+                float excess = peak - threshold;
+                float compressed_peak = threshold + extend * excess / (extend + excess);
+                L_specular = L_specular * compressed_peak/peak;
+            }
+        }
+        return L_specular;
     }
 
 

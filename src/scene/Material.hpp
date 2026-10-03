@@ -180,7 +180,7 @@ public:
         result.pdf = 1.f - sample_reflect;
 
         if (sampler.randFloat() < sample_reflect) {
-            BSDFSample result = branches.reflection;
+            result = branches.reflection;
             result.pdf = sample_reflect;
         }
 
@@ -189,7 +189,7 @@ public:
         return result;
     }
 
-    float roughness = 0.5f;         // 0.05=mirror-like -> 0.8=rough
+    float roughness = 0.2f;         // 0.05=mirror-like -> 0.8=rough
     Vector3f F0 = Vector3f(0.04f);  // Reflectance @normal-incidence
 
     MaterialType m_type = DIFFUSE;

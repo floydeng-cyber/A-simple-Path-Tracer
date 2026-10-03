@@ -94,6 +94,9 @@
     <ClInclude Include="src\acceleration\SAH.hpp">
       <Filter>Acceleration</Filter>
     </ClInclude>
+    <ClInclude Include="Denoiser.hpp">
+      <Filter>Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
