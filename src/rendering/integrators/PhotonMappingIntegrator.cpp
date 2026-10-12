@@ -1,14 +1,14 @@
-﻿#include "PhotonMappingIntegrator.hpp"
+#include "PhotonMappingIntegrator.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 
-#include "core/Sampler.hpp"
-#include "core/global.hpp"
-#include "geometry/Intersection.hpp"
-#include "scene/Material.hpp"
-#include "scene/Scene.hpp"
+#include "Sampler.hpp"
+#include "global.hpp"
+#include "Intersection.hpp"
+#include "Material.hpp"
+#include "Scene.hpp"
 
 PhotonMappingIntegrator::PhotonMappingIntegrator(
     const RenderSettings& set,
@@ -206,7 +206,7 @@ Vector3f PhotonMappingIntegrator::radiance(
             return L_specular;
         }
 
-        sampler.setDepth(depth);
+        sampler.updateDepth(depth);
         const BSDFSample bsdf = hit.m->sampleSurface(wo, N_hit, hit.geometricNormal, sampler);
         if (!bsdf.isValid())    return Vector3f(0.f);
 

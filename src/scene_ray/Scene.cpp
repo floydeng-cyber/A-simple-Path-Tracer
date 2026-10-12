@@ -1,5 +1,5 @@
-﻿#include "Scene.hpp"
-#include "core/Sampler.hpp"
+#include "Scene.hpp"
+#include "Sampler.hpp"
 
 Vector3f sampleCosineHemisphere(const Vector3f& surfaceNormal, Sampler& sampler) {
     const float u1 = sampler.randFloat();   // distance from disk center
@@ -44,25 +44,39 @@ Intersection Scene::intersect(const Ray& ray) const {
     return bvh ? bvh->Intersect(ray) : Intersection{};
 }
 
-void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
-    float emit_area_sum = 0.f;
+bool Scene::segmentVisible(const Intersection& origin, const Intersection& hit) const {
+    const Vector3f displacement = hit.coords - origin.coords;
+    if (displacement.norm2() < EPSILON)
+        return false;
 
-    for (const auto& obj : lights) {
-        emit_area_sum += obj->getArea(); // accumulate emisstion area
-    }
-    if (emit_area_sum < EPSILON) {  // fail to find sufficient light source area
+    const Vector3f dist_norm = normalize(displacement);
+    const Vector3f start = offsetRayOrigin(origin, dist_norm);
+    const Vector3f end   = offsetRayOrigin(hit, -dist_norm);
+    const Vector3f segment = end - start;
+    const float segmentLength = segment.norm();
+    if (segmentLength < EPSILON)
+        return false;
+
+    const Intersection firstHit = intersect(Ray(start, segment/ segmentLength));
+    return (!firstHit.happened) || (firstHit.distance >= segmentLength);
+}
+
+void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
+    float emit_area_sum = this->lightPDFsum;
+    
+    if (emit_area_sum <= EPSILON) {  // fail to have sufficient light source area
         pos = Intersection();
         pdf = 0.f;
         return;
     }
 
-    const float sampleLightWidth = sampler.randFloat() * emit_area_sum;
-    float accumulateLightWidth = 0.f;
+    const float sampleThreshold = sampler.randFloat() * emit_area_sum;
+    float countedLightArea = 0.f;
     
     for (const auto& obj : lights) {
-        accumulateLightWidth += obj->getArea();
+        countedLightArea += obj->getArea();
 
-        if (accumulateLightWidth >= sampleLightWidth) { // pick the emitssive obj when exceeding sample width
+        if (countedLightArea >= sampleThreshold) { // pick the emitssive obj when exceeding threshold
             obj->Sample(pos, pdf, sampler);         // area sampling
             pdf *= obj->getArea() / emit_area_sum;  // portion within total emissive area
             return;
@@ -70,6 +84,14 @@ void Scene::sampleLight(Intersection& pos, float& pdf, Sampler& sampler) const {
     }
     pos = Intersection();
     pdf = 0.f;
+}
+
+float Scene::areaLightPDF(const Intersection& lightHit) const {
+    if (!lightHit.happened || lightHit.m == nullptr ||
+        !lightHit.m->hasEmission() || lightPDFsum <= 0.f)
+        return 0.f;
+
+    return 1.f / lightPDFsum;
 }
 
 PhotonEmitSample Scene::samplePhotonEmission(
@@ -93,7 +115,7 @@ PhotonEmitSample Scene::samplePhotonEmission(
 
     const float jointPDF = sample.pdfArea * sample.pdfDir;
 
-    sample.power = lightPoint.emit * cosTheta
+    sample.power = lightPoint.m->getEmission() * cosTheta
                 / (jointPDF * static_cast<float>(photonCount));
 
     return sample;

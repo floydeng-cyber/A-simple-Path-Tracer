@@ -1,10 +1,10 @@
-﻿#include <algorithm>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 
-#include "acceleration/BVH.hpp"
-#include "acceleration/SAH.hpp"
-#include "core/Sampler.hpp"
+#include "BVH.hpp"
+#include "SAH.hpp"
+#include "Sampler.hpp"
 
 BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
                    SplitMethod splitMethod)

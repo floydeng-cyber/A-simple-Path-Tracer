@@ -14,7 +14,7 @@ Run commands from the project root so the renderer can locate `assets/models`.
 
 ## Render Modes
 
-Select the renderer in `src/core/RenderSettings.hpp`:
+Select the renderer in `src/setting_math/RenderSettings.hpp`:
 
 ```cpp
 RenderMode renderMode = RenderMode::PathTracing;
@@ -29,7 +29,7 @@ Set `outputFile` in the same file, then run the executable without arguments:
 ```
 
 Image quality and photon-map parameters are also configured in
-`src/core/RenderSettings.hpp`. Hybrid mode uses path tracing for general
+`src/setting_math/RenderSettings.hpp`. Hybrid mode uses path tracing for general
 illumination and photon mapping for caustics.
 
 Each run reports scene/BVH setup, integrator preprocessing, camera integration,
@@ -42,12 +42,12 @@ construction is included in the render-pipeline total for fair comparisons.
 ```text
 assets/models/              Scene geometry
 src/main.cpp                Program entry point
-src/core/                   Shared math, sampling, and settings
-src/geometry/               Bounds, rays, intersections, and shapes
+src/setting_math/           Shared math, sampling, and settings
+src/geometry_material/     Shapes and materials
 src/acceleration/           BVH construction and traversal
-src/scene/                  Scene ownership, materials, and light sampling
-src/rendering/              Camera and renderer
+src/scene_ray/              Scene, camera, bounds, rays, and intersections
+src/ObjLoader.hpp           OBJ loader
+src/rendering/              Renderer and base integrator
 src/rendering/integrators/  Path, photon, and hybrid integrators
-src/third_party/            External single-header dependencies
 render_img/                 Generated images (ignored by Git)
 ```

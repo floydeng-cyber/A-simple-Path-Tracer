@@ -1,14 +1,14 @@
-﻿#pragma once
+#pragma once
 
 #include <cassert>
 #include <array>
 
-#include "acceleration/BVH.hpp"
-#include "core/Sampler.hpp"
-#include "geometry/Intersection.hpp"
-#include "geometry/Object.hpp"
-#include "scene/Material.hpp"
-#include "third_party/ObjLoader.hpp"
+#include "BVH.hpp"
+#include "Sampler.hpp"
+#include "Intersection.hpp"
+#include "Object.hpp"
+#include "Material.hpp"
+#include "ObjLoader.hpp"
 
 class Triangle : public Object {
 public:
@@ -59,13 +59,12 @@ public:
         pos.normal = this->normal;
         pos.geometricNormal = normal;
         pos.positionError = positionErrorBound(1.f-u, u*(1.f-v), u*v);
-        pos.emit = m->getEmission();
+        pos.m = m;
 
         pdf = 1.f / area;
     }
 
     float getArea() { return area; }
-    bool hasEmit() { return m->hasEmission(); }
 
     Vector3f shadingNormal(float u, float v) const {
         return normalize(n0 * (1.f - u - v) + n1 * u + n2 * v);
@@ -98,12 +97,8 @@ public:
         const auto& mesh = loader.LoadedMeshes[0];
         triangles.reserve(mesh.Indices.size() / 3);
 
-        Vector3f min_vert = Vector3f{std::numeric_limits<float>::infinity(),
-                                     std::numeric_limits<float>::infinity(),
-                                     std::numeric_limits<float>::infinity()};
-        Vector3f max_vert = Vector3f{-std::numeric_limits<float>::infinity(),
-                                     -std::numeric_limits<float>::infinity(),
-                                     -std::numeric_limits<float>::infinity()};
+        Vector3f min_vert = Vector3f(  std::numeric_limits<float>::infinity());
+        Vector3f max_vert = Vector3f(- std::numeric_limits<float>::infinity());
         for (std::size_t i = 0; i + 2 < mesh.Indices.size(); i += 3) {
             std::array<Vector3f, 3> face_vertices;
             std::array<Vector3f, 3> face_normals;
@@ -148,14 +143,6 @@ public:
 
     Bounds3 getBounds() override { return bounding_box; }
 
-    //Vector3f evalDiffuseColor(const Vector2f& st) const {
-    //    float scale = 5;
-    //    float pattern =
-    //        (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
-    //    return lerp(Vector3f(0.815, 0.235, 0.031),
-    //                Vector3f(0.937, 0.937, 0.231), pattern);
-    //}
-
     Intersection getIntersection(Ray ray) override {
         Intersection intersec;
 
@@ -168,13 +155,10 @@ public:
     
     void Sample(Intersection& pos, float& pdf, Sampler& sampler) override {
         bvh->Sample(pos, pdf, sampler);
-        pos.emit = m->getEmission();
+        pos.m = m;
     }
     float getArea() override {
         return area;
-    }
-    bool hasEmit() override {
-        return m->hasEmission();
     }
 
     Bounds3 bounding_box;

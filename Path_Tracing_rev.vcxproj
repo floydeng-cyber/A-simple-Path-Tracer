@@ -77,7 +77,6 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -96,7 +95,6 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -113,7 +111,6 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +129,6 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,43 +138,50 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src\setting_math;$(ProjectDir)src\geometry_material;$(ProjectDir)src\scene_ray;$(ProjectDir)src\acceleration;$(ProjectDir)src\rendering;$(ProjectDir)src\rendering\integrators;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="Path_Tracing_rev.slnx" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Denoiser.hpp" />
+    <ClInclude Include="src\rendering\Denoiser.hpp" />
     <ClInclude Include="src\acceleration\SAH.hpp" />
-    <ClInclude Include="src\core\global.hpp" />
-    <ClInclude Include="src\core\RenderSettings.hpp" />
-    <ClInclude Include="src\core\Sampler.hpp" />
-    <ClInclude Include="src\core\Vector.hpp" />
-    <ClInclude Include="src\scene\Material.hpp" />
-    <ClInclude Include="src\scene\Scene.hpp" />
-    <ClInclude Include="src\geometry\Object.hpp" />
-    <ClInclude Include="src\geometry\Bounds3.hpp" />
-    <ClInclude Include="src\geometry\Intersection.hpp" />
-    <ClInclude Include="src\geometry\Ray.hpp" />
-    <ClInclude Include="src\geometry\Sphere.hpp" />
-    <ClInclude Include="src\geometry\Triangle.hpp" />
-    <ClInclude Include="src\third_party\ObjLoader.hpp" />
+    <ClInclude Include="src\scene_ray\Camera.hpp" />
+    <ClInclude Include="src\setting_math\global.hpp" />
+    <ClInclude Include="src\setting_math\RenderSettings.hpp" />
+    <ClInclude Include="src\setting_math\Sampler.hpp" />
+    <ClInclude Include="src\setting_math\Vector.hpp" />
+    <ClInclude Include="src\geometry_material\Material.hpp" />
+    <ClInclude Include="src\scene_ray\Scene.hpp" />
+    <ClInclude Include="src\geometry_material\Object.hpp" />
+    <ClInclude Include="src\scene_ray\Bounds3.hpp" />
+    <ClInclude Include="src\scene_ray\Intersection.hpp" />
+    <ClInclude Include="src\scene_ray\Ray.hpp" />
+    <ClInclude Include="src\geometry_material\Sphere.hpp" />
+    <ClInclude Include="src\geometry_material\Triangle.hpp" />
+    <ClInclude Include="src\ObjLoader.hpp" />
     <ClInclude Include="src\acceleration\BVH.hpp" />
-    <ClInclude Include="src\rendering\Camera.hpp" />
     <ClInclude Include="src\rendering\Renderer.hpp" />
-    <ClInclude Include="src\rendering\integrators\Integrator.hpp" />
+    <ClInclude Include="src\rendering\Integrator.hpp" />
+    <ClInclude Include="src\rendering\integrators\CelluloidIntegrator.hpp" />
     <ClInclude Include="src\rendering\integrators\HybridIntegrator.hpp" />
     <ClInclude Include="src\rendering\integrators\PathTracingIntegrator.hpp" />
     <ClInclude Include="src\rendering\integrators\PhotonMappingIntegrator.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\scene\Scene.cpp" />
+    <ClCompile Include="src\scene_ray\Camera.cpp" />
+    <ClCompile Include="src\scene_ray\Scene.cpp" />
     <ClCompile Include="src\acceleration\BVH.cpp" />
-    <ClCompile Include="src\rendering\Camera.cpp" />
     <ClCompile Include="src\rendering\Renderer.cpp" />
     <ClCompile Include="src\rendering\integrators\HybridIntegrator.cpp" />
     <ClCompile Include="src\rendering\integrators\PathTracingIntegrator.cpp" />
     <ClCompile Include="src\rendering\integrators\PhotonMappingIntegrator.cpp" />
+    <ClCompile Include="src\rendering\integrators\CelluloidIntegrator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

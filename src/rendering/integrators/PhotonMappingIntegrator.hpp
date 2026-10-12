@@ -1,10 +1,10 @@
-﻿#pragma once
+#pragma once
 
 #include <cstddef>
 #include <vector>
 
-#include "core/RenderSettings.hpp"
-#include "rendering/integrators/Integrator.hpp"
+#include "RenderSettings.hpp"
+#include "Integrator.hpp"
 
 struct Intersection;
 

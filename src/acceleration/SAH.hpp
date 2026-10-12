@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -6,7 +6,7 @@
 #include <limits>
 #include <vector>
 
-#include "geometry/Object.hpp"
+#include "Object.hpp"
 
 namespace SAH {
 

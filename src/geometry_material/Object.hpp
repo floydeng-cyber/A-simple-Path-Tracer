@@ -1,10 +1,10 @@
-﻿#pragma once
+#pragma once
 
-#include "core/Vector.hpp"
-#include "core/global.hpp"
-#include "geometry/Bounds3.hpp"
-#include "geometry/Intersection.hpp"
-#include "geometry/Ray.hpp"
+#include "Vector.hpp"
+#include "global.hpp"
+#include "Bounds3.hpp"
+#include "Intersection.hpp"
+#include "Ray.hpp"
 
 class Sampler;
 
@@ -20,5 +20,4 @@ public:
     virtual void Sample(Intersection &pos,
                         float &pdf,
                         Sampler& sampler) = 0;
-    virtual bool hasEmit() = 0;
 };

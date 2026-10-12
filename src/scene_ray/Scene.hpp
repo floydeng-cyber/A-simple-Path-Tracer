@@ -1,14 +1,14 @@
-﻿#pragma once
+#pragma once
 
 #include <memory>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "acceleration/BVH.hpp"
-#include "core/Vector.hpp"
-#include "geometry/Object.hpp"
-#include "geometry/Ray.hpp"
+#include "BVH.hpp"
+#include "Vector.hpp"
+#include "Object.hpp"
+#include "Ray.hpp"
 
 class Sampler;
 
@@ -30,6 +30,7 @@ private:
     std::vector<std::unique_ptr<Object>> objects;
     std::vector<Object*> lights;
     std::unique_ptr<BVHAccel> bvh;
+    float lightPDFsum = 0.f;
 public: 
     Scene() = default;
 
@@ -49,16 +50,21 @@ public:
 
         objType& result = *object;
 
-        if (object->hasEmit()) lights.emplace_back(object.get());
+        if (object->m->hasEmission()) {
+            lights.emplace_back(object.get());
+            lightPDFsum += object->getArea();
+        }
         objects.emplace_back(std::move(object));
 
         return result;
     }
 
     Intersection intersect(const Ray& ray) const;
-    void buildBVH();
+    bool segmentVisible(const Intersection& origin, const Intersection& hit) const;
 
+    void buildBVH();
     void sampleLight(Intersection &pos, float &pdf, Sampler& sampler) const;
+    float areaLightPDF(const Intersection& lightHit) const;
 
     PhotonEmitSample samplePhotonEmission(std::size_t photonCount, Sampler& sampler) const;
 };

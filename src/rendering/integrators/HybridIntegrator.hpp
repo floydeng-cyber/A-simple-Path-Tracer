@@ -1,9 +1,9 @@
-﻿#pragma once
+#pragma once
 
-#include "core/RenderSettings.hpp"
-#include "rendering/integrators/Integrator.hpp"
-#include "rendering/integrators/PathTracingIntegrator.hpp"
-#include "rendering/integrators/PhotonMappingIntegrator.hpp"
+#include "RenderSettings.hpp"
+#include "Integrator.hpp"
+#include "PathTracingIntegrator.hpp"
+#include "PhotonMappingIntegrator.hpp"
 
 class HybridIntegrator final : public Integrator {
 public:

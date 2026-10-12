@@ -31,55 +31,55 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\core\global.hpp">
+    <ClInclude Include="src\setting_math\global.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\RenderSettings.hpp">
+    <ClInclude Include="src\setting_math\RenderSettings.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Sampler.hpp">
+    <ClInclude Include="src\setting_math\Sampler.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Vector.hpp">
+    <ClInclude Include="src\setting_math\Vector.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\scene\Material.hpp">
+    <ClInclude Include="src\geometry_material\Material.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="src\scene\Scene.hpp">
+    <ClInclude Include="src\scene_ray\Scene.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="src\geometry\Object.hpp">
+    <ClInclude Include="src\geometry_material\Object.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="src\geometry\Bounds3.hpp">
+    <ClInclude Include="src\scene_ray\Bounds3.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="src\geometry\Intersection.hpp">
+    <ClInclude Include="src\scene_ray\Intersection.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="src\geometry\Ray.hpp">
+    <ClInclude Include="src\scene_ray\Ray.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="src\geometry\Sphere.hpp">
+    <ClInclude Include="src\geometry_material\Sphere.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="src\geometry\Triangle.hpp">
+    <ClInclude Include="src\geometry_material\Triangle.hpp">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="src\third_party\ObjLoader.hpp">
+    <ClInclude Include="src\ObjLoader.hpp">
       <Filter>Third Party</Filter>
     </ClInclude>
     <ClInclude Include="src\acceleration\BVH.hpp">
       <Filter>Acceleration</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\Camera.hpp">
+    <ClInclude Include="src\scene_ray\Camera.hpp">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\Renderer.hpp">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\integrators\Integrator.hpp">
+    <ClInclude Include="src\rendering\Integrator.hpp">
       <Filter>Rendering\Integrators</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\integrators\HybridIntegrator.hpp">
@@ -94,21 +94,24 @@
     <ClInclude Include="src\acceleration\SAH.hpp">
       <Filter>Acceleration</Filter>
     </ClInclude>
-    <ClInclude Include="Denoiser.hpp">
+    <ClInclude Include="src\rendering\Denoiser.hpp">
       <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\integrators\CelluloidIntegrator.hpp">
+      <Filter>Rendering\Integrators</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
       <Filter>App</Filter>
     </ClCompile>
-    <ClCompile Include="src\scene\Scene.cpp">
+    <ClCompile Include="src\scene_ray\Scene.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
     <ClCompile Include="src\acceleration\BVH.cpp">
       <Filter>Acceleration</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\Camera.cpp">
+    <ClCompile Include="src\scene_ray\Camera.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\Renderer.cpp">
@@ -121,6 +124,9 @@
       <Filter>Rendering\Integrators</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\integrators\PhotonMappingIntegrator.cpp">
+      <Filter>Rendering\Integrators</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\integrators\CelluloidIntegrator.cpp">
       <Filter>Rendering\Integrators</Filter>
     </ClCompile>
   </ItemGroup>

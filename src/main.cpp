@@ -4,15 +4,15 @@
 #include <memory>
 #include <string>
 
-#include "core/RenderSettings.hpp"
-#include "core/Sampler.hpp"
-#include "geometry/Triangle.hpp"
-#include "rendering/Camera.hpp"
-#include "rendering/Renderer.hpp"
-#include "rendering/integrators/HybridIntegrator.hpp"
-#include "rendering/integrators/PathTracingIntegrator.hpp"
-#include "rendering/integrators/PhotonMappingIntegrator.hpp"
-#include "scene/Scene.hpp"
+#include "RenderSettings.hpp"
+#include "Sampler.hpp"
+#include "Triangle.hpp"
+#include "Camera.hpp"
+#include "Renderer.hpp"
+#include "HybridIntegrator.hpp"
+#include "PathTracingIntegrator.hpp"
+#include "PhotonMappingIntegrator.hpp"
+#include "Scene.hpp"
 
 int main(int argc, char* argv[]) {
     using Clock = std::chrono::steady_clock;
@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
             std::cerr << "Unknown render mode: " << mode << '\n';
             return 1;
         }
-        settings.outputFile = std::string("render_img/cornellBox_")
+        settings.outputFile = settings.outputPath
                             + renderModeName(settings.renderMode) + ".ppm";
     }
 
@@ -116,16 +116,15 @@ int main(int argc, char* argv[]) {
         scene, camera, *integrator, settings);
     const auto pipelineEnd = Clock::now();
 
-    const double sceneLoadSeconds =
-        std::chrono::duration<double>(sceneLoadEnd - sceneStart).count();
-    const double BVHBuildSeconds =
-        std::chrono::duration<double>(BVHEnd - sceneLoadEnd).count();
-    const double preprocessSeconds =
-        std::chrono::duration<double>(preprocessEnd - preprocessStart).count();
-    const double pipelineSeconds =
-        std::chrono::duration<double>(pipelineEnd - pipelineStart).count();
-    const double endToEndSeconds =
-        std::chrono::duration<double>(pipelineEnd - applicationStart).count();
+    auto getDuration = [](const auto endTime, const auto startTime) {
+        return std::chrono::duration<double>(endTime - startTime).count();
+        };
+
+    const double sceneLoadSeconds = getDuration(sceneLoadEnd, sceneStart);
+    const double BVHBuildSeconds = getDuration(BVHEnd, sceneLoadEnd);
+    const double preprocessSeconds = getDuration(preprocessEnd, preprocessStart);
+    const double pipelineSeconds = getDuration(pipelineEnd, pipelineStart);
+    const double endToEndSeconds = getDuration(pipelineEnd, applicationStart);
 
     std::cout << std::fixed << std::setprecision(3)
               << "Render complete\n"
@@ -135,6 +134,8 @@ int main(int argc, char* argv[]) {
               << "  BVH construction:      " << BVHBuildSeconds << " s\n"
               << "  Integrator preprocess: " << preprocessSeconds << " s\n"
               << "  Pixel computation:     " << renderStats.integrationSeconds << " s\n"
+              << (!settings.denoiserOn ? "" : std::format(
+                 "  Denoising :            {:.3f} s\n", renderStats.denoiseSeconds))
               << "  Image write:           " << renderStats.imageWriteSeconds << " s\n"
               << "  Render pipeline total: " << pipelineSeconds << " s\n"
               << "  End-to-end total:      " << endToEndSeconds << " s\n";

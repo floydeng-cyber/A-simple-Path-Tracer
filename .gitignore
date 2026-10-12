@@ -12,6 +12,7 @@
 [Rr]elease/
 x64/
 x86/
+/Path_Tracing_rev/
 [Oo]bj/
 [Bb]in/
 *.pdb
@@ -29,6 +30,7 @@ x86/
 
 # CMake and Ninja generated files
 build/
+out/
 cmake-build-*/
 CMakeFiles/
 CMakeCache.txt

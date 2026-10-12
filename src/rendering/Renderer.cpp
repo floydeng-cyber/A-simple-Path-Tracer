@@ -1,51 +1,54 @@
-﻿#include "Renderer.hpp" // Renderer declarations.
+﻿#include "Renderer.hpp" // Renderer declarations
+#include "Denoiser.hpp"
 
-#include <algorithm> // std::max.
-#include <atomic> // Thread-safe progress counter.
-#include <chrono> // Timing and progress interval.
-#include <cmath> // std::pow.
-#include <cstdio> // PPM file output.
-#include <filesystem> // Output directory creation.
-#include <iostream> // Console output.
-#include <stdexcept> // File error reporting.
-#include <thread> // Worker threads.
-#include <vector> // Framebuffer and thread storage.
+#include <algorithm>
+#include <atomic> // Thread-safe progress counter
+#include <chrono> // Timing and progress interval
+#include <cmath>
+#include <cstdio> // PPM file output
+#include <filesystem> // Output directory creation
+#include <iostream>
+#include <stdexcept> // File error reporting
+#include <thread>
+#include <vector>
 
-#include "core/Sampler.hpp" // Random sampling.
-#include "scene/Scene.hpp" // Scene data.
+#include "Sampler.hpp"
+#include "Scene.hpp"
 
-const float EPSILON = 1e-5f; // Shared ray-offset tolerance.
+const float EPSILON = 1e-5f; // Shared ray-offset tolerance
 
-RenderStats Renderer::Render( // Renders the scene and returns timing data.
-    const Scene& scene, // Scene to render.
-    const Camera& camera, // Camera used to create rays.
-    const Integrator& integrator, // Light-transport implementation.
-    const RenderSettings& setting) { // Render configuration.
+RenderStats Renderer::Render(
+    const Scene& scene,
+    const Camera& camera,
+    const Integrator& integrator,
+    const RenderSettings& setting) {
 
-    using Clock = std::chrono::steady_clock; // Monotonic timer.
+    using vectorRGB = std::vector<Vector3f>;    // type alias for vector<RGB-value>
 
-    std::vector<Vector3f> framebuffer(setting.width * setting.height); // Pixel colors.
-    const float sampleWeight = 1.f / static_cast<float>(setting.SPP); // Weight of one sample.
+    using Clock = std::chrono::steady_clock; // Monotonic timer
+
+    vectorRGB framebuffer(setting.width * setting.height); // Pixel colors
+    const float sampleWeight = 1.f / static_cast<float>(setting.SPP); // Weight of one sample
     std::cout << "SPP: " << setting.SPP << " | "
               << "Renderer: " << renderModeName(setting.renderMode)
               << "\n"; // Print sample count.
 
-    const int threadCount = setting.threadCount > 0 // Use requested threads when provided.
-        ? setting.threadCount // Explicit thread count.
-        : static_cast<int>(std::max(1u, std::thread::hardware_concurrency())); // Otherwise use the CPU count.
+    const int threadCount = (setting.threadCount > 0)
+        ? setting.threadCount
+        : static_cast<int>(std::max(1u, std::thread::hardware_concurrency())); // Otherwise use the CPU count
 
     std::atomic<int> completedRows{0}; // Rows completed by all workers
     const auto integrationStart = Clock::now(); // Start integration timer
 
     auto renderRows = [&](int firstRow) { // Each worker renders every threadCount-th row
         for (int j = firstRow; j < setting.height; j += threadCount) { // Visit this worker's rows
-            for (int i = 0; i < setting.width; ++i) { // Visit each pixel in the row
+            for (int i = 0; i < setting.width; ++i) {
                 const int frameIndex = j * setting.width + i; // Convert 2D position to array index
                 Sampler sampler(Sampler::makeSeed(
                     setting.randSeed, static_cast<std::uint64_t>(frameIndex)
                 ));
 
-                for (int sample_idx = 0; sample_idx < setting.SPP; ++sample_idx) { // Trace all pixel samples
+                for (int sample_idx = 0; sample_idx < setting.SPP; ++sample_idx) {
                     sampler.startGrid(sample_idx, setting.SPP);
                     const Vector2f XYdeviation = sampler.randDiffuse2D();
                     const float normalizedX =
@@ -54,14 +57,13 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
                         (static_cast<float>(j) + XYdeviation.y) / setting.height;
                     const Ray primaryRay = camera.generateRay(normalizedX, normalizedY); // Create camera ray
 
-                    framebuffer[frameIndex] += // Accumulate the averaged sample.
-                        integrator.radiance(primaryRay, scene, sampler, 0) * sampleWeight;
-                } // End sampling loop
-            } // End pixel loop
-
-            ++completedRows; // Acculmulate finished row
-        } // End row loop
-    }; // End worker function
+                    framebuffer[frameIndex] += integrator.radiance(
+                        primaryRay, scene, sampler, 0) * sampleWeight;
+                }
+            }
+            ++completedRows;
+        }
+    };
 
     std::vector<std::thread> threads; // Worker collection
     threads.reserve(threadCount);
@@ -69,17 +71,21 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
         threads.emplace_back(renderRows, threadIndex); // Construct the thread directly in the vector
     }
 
-    while (completedRows.load() < setting.height) { // Update progress until rendering finishes.
-        UpdateProgress(completedRows.load() / static_cast<float>(setting.height)); // Show completion fraction
+    while (completedRows.load() < setting.height) { // Update progress until rendering finishes
+        UpdateProgress(completedRows.load() / static_cast<float>(setting.height));
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    } // End progress loop.
+    }
 
     for (std::thread& worker : threads)
-        worker.join(); // Wait for it to finish
-    
+        worker.join(); // Wait for all workers to finish
     UpdateProgress(1.f); // Show 100%
     std::cout << "\n";
     const auto integrationEnd = Clock::now(); // Stop integration timer
+
+    const auto denoiseStart = Clock::now(); // start denosing
+    if (setting.denoiserOn)
+        Denoiser::apply(framebuffer, setting.height, setting.width);
+    const auto denoiseEnd = Clock::now();   // end denosing
 
     const auto imageWriteStart = Clock::now(); // Start output timer
 
@@ -101,18 +107,26 @@ RenderStats Renderer::Render( // Renders the scene and returns timing data.
             255 * std::pow(clamp(0, 1, value), 0.6f));
     };
 
-    for (const Vector3f& pixel : framebuffer) { // Write each pixel.
-        const unsigned char color[3] = { // RGB byte triplet.
-            toByte(pixel.x), toByte(pixel.y), toByte(pixel.z) // Convert all channels.
-        }; // End RGB array.
-        std::fwrite(color, 1, 3, output); // Write three bytes.
-    } // End pixel-write loop.
+    for (const Vector3f& pixel : framebuffer) { // Write each pixel
+        const unsigned char color[3] = {
+            toByte(pixel.x), toByte(pixel.y), toByte(pixel.z)
+        };
+        std::fwrite(color, 1, 3, output); // Write three bytes
+    }
 
     std::fclose(output); // Close output file.
-    const auto imageWriteEnd = Clock::now(); // Stop output timer.
+    const auto imageWriteEnd = Clock::now(); // Stop output timer
 
-    return RenderStats{ // Return elapsed times.
-        std::chrono::duration<double>(integrationEnd - integrationStart).count(), // Integration seconds.
-        std::chrono::duration<double>(imageWriteEnd - imageWriteStart).count() // Output seconds.
-    }; // End result.
-} // End render function.
+    if (setting.denoiserOn) {
+        return RenderStats{ // Return elapsed times
+            std::chrono::duration<double>(integrationEnd - integrationStart).count(), // Integration seconds
+            std::chrono::duration<double>(imageWriteEnd - imageWriteStart).count(), // Output seconds
+            std::chrono::duration<double>(denoiseEnd - denoiseStart).count()    // Denoise seconds
+        };
+    } else {
+        return RenderStats{ // Return elapsed times
+            std::chrono::duration<double>(integrationEnd - integrationStart).count(), // Integration seconds
+            std::chrono::duration<double>(imageWriteEnd - imageWriteStart).count() // Output seconds
+        };
+    }
+}

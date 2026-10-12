@@ -51,8 +51,8 @@ public:
         return Vector3f(std::max(vec1.x, vec2.x),std::max(vec1.y,vec2.y),std::max(vec1.z,vec2.z));
     }   // maximal value in each of 3 components
 
-    Vector3f getClamped() {
-        return Vector3f(std::min(1.f, x), std::min(1.f, y), std::min(1.f, z));
+    Vector3f getClamped(float newMax = 1.f) {
+        return Vector3f(std::min(newMax, x), std::min(newMax, y), std::min(newMax, z));
     }
 };
 inline float Vector3f::operator[](int index) const {

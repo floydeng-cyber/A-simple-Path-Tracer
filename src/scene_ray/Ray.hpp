@@ -1,5 +1,5 @@
-﻿#pragma once
-#include "core/Vector.hpp"
+#pragma once
+#include "Vector.hpp"
 
 struct Ray{
     Vector3f origin;
@@ -7,6 +7,6 @@ struct Ray{
 
     Ray(const Vector3f& ori, const Vector3f& dir)
             : origin(ori), direction(dir) {
-        direction_inv = Vector3f(1. / direction.x, 1. / direction.y, 1. / direction.z);
+        direction_inv = Vector3f(1.f/direction.x, 1.f/direction.y, 1.f/direction.z);
     }
 };

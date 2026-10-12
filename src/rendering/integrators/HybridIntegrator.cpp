@@ -1,10 +1,10 @@
-﻿#include "HybridIntegrator.hpp"
+#include "HybridIntegrator.hpp"
 
-#include "core/Sampler.hpp"
-#include "core/global.hpp"
-#include "geometry/Intersection.hpp"
-#include "scene/Material.hpp"
-#include "scene/Scene.hpp"
+#include "Sampler.hpp"
+#include "global.hpp"
+#include "Intersection.hpp"
+#include "Material.hpp"
+#include "Scene.hpp"
 
 HybridIntegrator::HybridIntegrator(const RenderSettings& renderSettings)
     : settings(renderSettings),

@@ -1,13 +1,13 @@
-﻿#pragma once
+#pragma once
 
 #include <vector>
 #include <memory>
 #include <ctime>
-#include "core/Vector.hpp"
-#include "geometry/Bounds3.hpp"
-#include "geometry/Intersection.hpp"
-#include "geometry/Object.hpp"
-#include "geometry/Ray.hpp"
+#include "Vector.hpp"
+#include "Bounds3.hpp"
+#include "Intersection.hpp"
+#include "Object.hpp"
+#include "Ray.hpp"
 
 class Sampler;
 

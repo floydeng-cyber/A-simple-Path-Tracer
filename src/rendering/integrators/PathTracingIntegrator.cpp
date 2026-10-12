@@ -1,11 +1,19 @@
-﻿#include "PathTracingIntegrator.hpp"
+#include "PathTracingIntegrator.hpp"
 
-#include "core/RenderSettings.hpp"
-#include "core/Sampler.hpp"
-#include "scene/Scene.hpp"
+#include "RenderSettings.hpp"
+#include "Sampler.hpp"
+#include "Scene.hpp"
 
 #include <algorithm>
 #include <cmath>
+
+namespace {
+    float powerWeight(float thisPDF, float otherPDF) {
+        const double a = double(thisPDF) * thisPDF;
+        const double b = double(otherPDF) * otherPDF;
+        return (a + b > 0.0) ? float(a / (a + b)) : 0.f;
+    }
+}
 
 PathTracingIntegrator::PathTracingIntegrator(
     const RenderSettings& set
@@ -23,81 +31,98 @@ Vector3f PathTracingIntegrator::radiance(
 }
 
 Vector3f PathTracingIntegrator::radianceAtHit(
-    const Ray& ray,     const Intersection& hit,
-    const Scene& scene, Sampler& sampler,           int depth) const {
+    const Ray& ray, const Intersection& hit,
+    const Scene& scene, Sampler& sampler, int depth) const {
 
-    if (!hit.happened || depth > setting.MaxDepth)        // If not intersecting,
-        return Vector3f(0.f); // return no light/color
+    if (!hit.happened || depth > setting.MaxDepth)
+        return Vector3f(0.f);
 
-    // Store properties of the surface hit
-    const Vector3f p_hit = hit.coords;  // Point coordinate  of the hit
-    const Vector3f N_hit = hit.normal;  // Surface normal    of the hit
-    const Vector3f wo = -ray.direction; // Inward ray vector of the hit
-
-    // For indirect light : Sampling into space randomly
-    // ===========================================================================
-    Vector3f L_indir(0.f);
-    const float roulette_firstNsaved = (depth < setting.savefirstN)
-                                       ? 1.f : setting.rusRoulette;
-    if (!hit.m->hasEmission() &&    // check cur. depth AND emission
-        sampler.randFloat() <= roulette_firstNsaved) { // Survive the Russian roulette?
-        
-        sampler.setDepth(depth);
-        const BSDFSample bsdf = hit.m->sampleSurface(wo, N_hit, hit.geometricNormal, sampler);
-
-        if (bsdf.isValid()) {
-            const Ray pathRay(offsetRayOrigin(hit, bsdf.direction), bsdf.direction);
-
-            L_indir =
-                radiance(pathRay, scene, sampler, depth+1) // Light      (next object)
-                * bsdf.weight
-                / roulette_firstNsaved;
-        }
+    if (hit.m->hasEmission()) {
+        if (dotProduct(hit.geometricNormal, -ray.direction) <= 0.f)
+            return Vector3f(0.f);
+        return (depth == 0 || depth > 4)
+            ? hit.m->getEmission().getClamped()
+            : hit.m->getEmission();
     }
 
-    if (hit.m->isSpecular()) return L_indir;
+    const Vector3f p_hit = hit.coords;
+    const Vector3f p_N = hit.normal;
+    const Vector3f wo = -ray.direction;
+    const float survival = (depth < setting.savefirstN)
+        ? 1.f : setting.rusRoulette;
 
-    // For direct light : Sampling light sources randomly
+    sampler.updateDepth(depth);
+    const BSDFSample bsdf =
+        hit.m->sampleSurface(wo, p_N, hit.geometricNormal, sampler);
+
+    // Delta events have no competing area-light sampling technique.
+    if (hit.m->isSpecular()) {
+        if (!bsdf.isValid() || sampler.randFloat() >= survival)
+            return Vector3f(0.f);
+
+        const Ray nextRay(offsetRayOrigin(hit, bsdf.direction), bsdf.direction);
+        return radiance(nextRay, scene, sampler, depth + 1)
+            * bsdf.weight / survival;
+    }
+
+    Vector3f L_dir(0.f);
+    Vector3f L_indir(0.f);
+
+    // Direct light Estimator 1: a point on an area light
     // ===========================================================================
-    Intersection sampled_light;   // Initiate Detection of light source
-    float pdf_light = 0.f;          // Initiate Probablity Distribution Function
-    scene.sampleLight(sampled_light, pdf_light, sampler); // Area sampling of one light source
+    Intersection sampled_light;
+    float pdf_areaLight = 0.f;
+    scene.sampleLight(sampled_light, pdf_areaLight, sampler);
 
-    Vector3f L_dir(0.f); // Direct light: If shadow ray hits the light source
-    if (pdf_light > EPSILON) {
-        const Vector3f lightOffset = sampled_light.coords - p_hit;
-        float hit_light_dist2 = dotProduct(lightOffset, lightOffset);
+    if (pdf_areaLight > 0.f && sampled_light.m != nullptr) {
+        const Vector3f offset = sampled_light.coords - p_hit;
+        const float dist2 = dotProduct(offset, offset);
 
-        if (hit_light_dist2 > 2.5e-5f) {    // away enough from sampled light source
-            const Vector3f ws = normalize(lightOffset);    // direction towards the light source
-            const Vector3f N_light = sampled_light.normal; // Normal of the light source
+        if (dist2 > EPSILON*EPSILON) {
+            const Vector3f ws = normalize(offset);
+            const float cosSurface = std::max(0.f, dotProduct(p_N, ws));
+            const float cosLight = std::max(0.f, dotProduct(sampled_light.geometricNormal, -ws));
 
-            const float cos_surface = std::max(0.f, dotProduct(ws, N_hit));
-            const float cos_light = std::max(0.f, dotProduct(-ws, N_light));
+            if (cosSurface > 0.f && cosLight > 0.f &&
+                scene.segmentVisible(hit, sampled_light)) {
 
-            if (cos_surface > 0.f && cos_light > 0.f) {
-                const Ray shadow_ray(offsetRayOrigin(hit, ws), ws);
-                const Intersection shadow_hit = scene.intersect(shadow_ray);
+                // Convert area PDF to solid-angle PDF
+                const float pdf_areaLight_cr = pdf_areaLight * dist2 / cosLight;
+                const float pdf_bsdf_cr = hit.m->pdf(wo, ws, p_N);
 
-                const float dist_diff = std::abs(
-                    static_cast<float>(shadow_hit.distance) - sqrtf(hit_light_dist2)
-                );
-
-                if (shadow_hit.happened && (dist_diff < 5e-3f))
-                    L_dir = sampled_light.emit            // Emission           (light source)
-                          * (hit.m->eval(wo, ws, N_hit)) // BRDF                (hit surface)
-                          * cos_surface                 // Direct-ness          (ray onto hit surface)
-                          * cos_light                  // Direct-ness           (ray from area light)
-                          / hit_light_dist2           // Surface-light distance (squared inverse)
-                          / pdf_light;               // PDF                     (sampled light source)
+                L_dir += sampled_light.m->getEmission()
+                    * hit.m->eval(wo, ws, p_N)
+                    * cosSurface * cosLight / (dist2 * pdf_areaLight)
+                    * powerWeight(pdf_areaLight_cr, pdf_bsdf_cr);
             }
         }
     }
 
-    Vector3f shade_color = L_dir + L_indir;
+    // Direct light Estimator 2: BRDF; ray reused
+    // ===========================================================================
+    if (bsdf.isValid()) {
+        const Ray nextRay(offsetRayOrigin(hit, bsdf.direction), bsdf.direction);
+        const Intersection nextHit = scene.intersect(nextRay);
 
-    if (hit.m->hasEmission())      // If hitting light source
-        shade_color += hit.m->getEmission(); // add emission
+        if (nextHit.happened && nextHit.m->hasEmission()) {
+            const float cosLight = std::max(0.f, dotProduct(nextHit.geometricNormal, -bsdf.direction));
 
-    return shade_color.getClamped();
+            if (cosLight > 0.f) {
+                const Vector3f offset = nextHit.coords - p_hit;
+                const float dist2 = dotProduct(offset, offset);
+                const float pdf_areaLight_cr = scene.areaLightPDF(nextHit) * dist2 / cosLight;
+
+                L_dir += nextHit.m->getEmission() * bsdf.weight
+                    * powerWeight(bsdf.pdf, pdf_areaLight_cr);
+            }
+        }
+        else if (nextHit.happened && depth < setting.MaxDepth &&
+            sampler.randFloat() < survival) {
+            L_indir = radianceAtHit(
+                nextRay, nextHit, scene, sampler, depth+1)
+                * bsdf.weight / survival;
+        }
+    }
+
+    return (L_dir + L_indir).getClamped();
 }

@@ -1,8 +1,8 @@
-﻿#pragma once
+#pragma once
 
-#include "core/Sampler.hpp"
-#include "core/Vector.hpp"
-#include "core/global.hpp"
+#include "Sampler.hpp"
+#include "Vector.hpp"
+#include "global.hpp"
 
 enum class ScatterEvent {
     Invalid,
@@ -68,27 +68,27 @@ private:
     // Compute Fresnel equation
     //
     // \param I is the incident view direction
-    //
     // \param N is the normal at the intersection point
-    //
     // \param ior is the material refractive index
     //
     // \param[out] kr is the amount of light reflected
-    void fresnel(const Vector3f &I, const Vector3f &N, const float &ior, float &kr) const {
-        float cosi = clamp(-1, 1, dotProduct(I, N));
-        float etai = 1, etat = ior;
-        if (cosi > 0) {  std::swap(etai, etat); }
+    void fresnel(const Vector3f& I, const Vector3f& N, const float& ior, float& kr) const {
+        float cosi = clamp(-1.f, 1.f, dotProduct(I, N));
+        float n0 = 1, n1 = ior;
+        if (cosi > 0.f)   // incoming ray comes beneath surface
+            std::swap(n0, n1);
+
         // Compute sini using Snell's law
-        float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi));
+        float sint = n0 / n1 * sqrtf(std::max(0.f, 1.f - cosi * cosi));
         // Total internal reflection
-        if (sint >= 1) {
+        if (sint >= 1.f) {
             kr = 1;
         } else {
             float cost = sqrtf(std::max(0.f, 1 - sint * sint));
-            cosi = fabsf(cosi);
-            float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
-            float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
-            kr = (Rs * Rs + Rp * Rp) / 2;
+            cosi = std::abs(cosi);
+            float Rs = ((n1 * cosi) - (n0 * cost)) / ((n1 * cosi) + (n0 * cost));
+            float Rp = ((n0 * cosi) - (n1 * cost)) / ((n0 * cosi) + (n1 * cost));
+            kr = (Rs * Rs + Rp * Rp) / 2.f;
         }
         // As a consequence of the conservation of energy, transmittance is given by:
         // kt = 1 - kr;
@@ -155,8 +155,8 @@ public:
             refl_dir = normalize(reflect(-wi,normal));
             trans_dir = refract(-wi,normal,ior);
         }
-        const float eta = side > 0.f ? 1.f/ior : ior;
-        const float transmissionScale = mode == TransportMode::Radiance ? eta*eta : 1.f;
+        const float n = (side > 0.f) ? 1.f/ior : ior;
+        const float transmissionScale = (mode == TransportMode::Radiance) ? n*n : 1.f;
         return {
             {refl_dir, Ks*reflect_coef, reflect_coef, ScatterEvent::Reflection},
             {normalize(trans_dir), Ks*((1.f-reflect_coef)*transmissionScale), 1.f-reflect_coef, ScatterEvent::Transmission}
@@ -228,19 +228,19 @@ Material::Material(MaterialType type, Vector3f emit)
     : m_type(type), m_emission(emit) {}
 
 MaterialType Material::getType() const { return m_type;}
+
 Vector3f Material::getEmission() const { return m_emission;}
 bool Material::hasEmission() const {
-    return (m_emission.norm() > EPSILON);
+    return (m_emission.norm2() > EPSILON*EPSILON);
 }
 
 BSDFSample Material::sample(const Vector3f& wi, const Vector3f& N, Sampler& sampler) const {
     switch(m_type){
         case DIFFUSE: {
             const Vector2f gridSample = sampler.randDiffuse2D();
-            const float gridX = gridSample.x,
-                        phi = 2.f*M_PI*gridSample.y,
-                        radius = std::sqrtf(gridX),
-                        z = std::sqrt(1.f-gridX);
+            const float phi     = 2.f * M_PI * gridSample.y,
+                        radius  = std::sqrtf(gridSample.x),
+                        z       = std::sqrtf(1.f - gridSample.x);
             const Vector3f sample_dir = normalize(toWorld(
                 Vector3f(radius*std::cos(phi), radius*std::sin(phi), z), N
             ));
@@ -339,11 +339,8 @@ Vector3f Material::eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& 
 
     switch(m_type){
         case DIFFUSE: {
-            // calculate the contribution of diffuse model
             Vector3f diffuse = Kd / M_PI;
             return diffuse;
-
-            break;
         }
         case MICROFACET: {
             Vector3f half  = normalize(wi + wo);
@@ -363,8 +360,6 @@ Vector3f Material::eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& 
             Vector3f specular = Fresnel * Dist * Geo
                               / std::max(EPSILON, 4.f * NdotView * NdotLight);
             return Kd / M_PI + specular;
-
-            break;
         }
         case MIRROR: {
             Vector3f reflectDir = normalize( reflect(-wi, N) );
@@ -374,12 +369,9 @@ Vector3f Material::eval(const Vector3f& wi, const Vector3f& wo, const Vector3f& 
                 return Ks / std::max(EPSILON, dotProduct(N, wo));
 
             return Vector3f(0.f);
-
-            break;
         }
         case DIELECTRIC: {
             return Ks;
-            break;
         }
     }
     return Vector3f(0.f);

@@ -1,8 +1,8 @@
-﻿#pragma once
+#pragma once
 
 #include <cstdint>
 #include <random>
-#include "core/Vector.hpp"
+#include "Vector.hpp"
 
 class Sampler {
 private:
@@ -39,11 +39,14 @@ public:
 		if (grid_wid*grid_wid != spp) grid_wid = 1;
 		grid_depth = 0;
 	}
-	void setDepth(int depth) { grid_depth = depth; }
+	void updateDepth(int depth) {
+		grid_depth = depth;
+	}
 
 	Vector2f randDiffuse2D() {
 		const Vector2f sample = rand2D();
 		if (grid_depth != 0 || grid_wid <= 1) return sample;
+		//if (grid_wid <= 1) return sample;
 
 		const float x = (grid_idx % grid_wid + sample.x) / grid_wid;
 		const float y = (grid_idx / grid_wid + sample.y) / grid_wid;

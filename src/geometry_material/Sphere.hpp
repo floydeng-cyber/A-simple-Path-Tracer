@@ -1,10 +1,10 @@
-﻿#pragma once
+#pragma once
 
-#include "core/Sampler.hpp"
-#include "core/Vector.hpp"
-#include "geometry/Bounds3.hpp"
-#include "geometry/Object.hpp"
-#include "scene/Material.hpp"
+#include "Sampler.hpp"
+#include "Vector.hpp"
+#include "Bounds3.hpp"
+#include "Object.hpp"
+#include "Material.hpp"
 
 class Sphere : public Object{
 public:
@@ -68,10 +68,9 @@ public:
         for (int i=0;i<3;++i)
             pos.positionError[i] = 8.f * std::numeric_limits<float>::epsilon()
                 * (std::abs(center[i]) + radius);
-        pos.emit = m->getEmission();
+        pos.m = m;
         pdf = 1.f / area;
     }
 
     float getArea() { return area; }
-    bool hasEmit() { return m->hasEmission(); }
 };

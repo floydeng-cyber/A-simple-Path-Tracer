@@ -1,6 +1,6 @@
-﻿#pragma once
-#include "geometry/Ray.hpp"
-#include "core/Vector.hpp"
+#pragma once
+#include "Ray.hpp"
+#include "Vector.hpp"
 #include <limits>
 #include <array>
 

@@ -1,12 +1,13 @@
 ﻿#pragma once
-#include "core/RenderSettings.hpp"
-#include "rendering/Camera.hpp"
-#include "rendering/integrators/Integrator.hpp"
-#include "scene/Scene.hpp"
+#include "RenderSettings.hpp"
+#include "Camera.hpp"
+#include "Integrator.hpp"
+#include "Scene.hpp"
 
 struct RenderStats {
     double integrationSeconds = 0.0;
     double imageWriteSeconds = 0.0;
+    double denoiseSeconds = 0.0;
 };
 
 class Renderer {
