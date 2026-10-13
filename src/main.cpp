@@ -126,6 +126,10 @@ int main(int argc, char* argv[]) {
     const double pipelineSeconds = getDuration(pipelineEnd, pipelineStart);
     const double endToEndSeconds = getDuration(pipelineEnd, applicationStart);
 
+    const std::string denoiseDuration = (settings.denoiserOn)
+        ? std::to_string(round(renderStats.denoiseSeconds *1000)*0.001)
+        : std::string("[n/a]");
+
     std::cout << std::fixed << std::setprecision(3)
               << "Render complete\n"
               << "  Mode:                  " << renderModeName(settings.renderMode) << "\n"
@@ -134,8 +138,7 @@ int main(int argc, char* argv[]) {
               << "  BVH construction:      " << BVHBuildSeconds << " s\n"
               << "  Integrator preprocess: " << preprocessSeconds << " s\n"
               << "  Pixel computation:     " << renderStats.integrationSeconds << " s\n"
-              << (!settings.denoiserOn ? "" : std::format(
-                 "  Denoising :            {:.3f} s\n", renderStats.denoiseSeconds))
+              << "  Denoising :            " << denoiseDuration << " s\n"
               << "  Image write:           " << renderStats.imageWriteSeconds << " s\n"
               << "  Render pipeline total: " << pipelineSeconds << " s\n"
               << "  End-to-end total:      " << endToEndSeconds << " s\n";

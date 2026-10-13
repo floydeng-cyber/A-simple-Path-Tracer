@@ -25,7 +25,7 @@ struct RenderSettings {
 	RenderMode renderMode = RenderMode::PathTracing;
 	int		width  = 500;		 // Image width  [pixel]
 	int		height = 500;		 // Image height [pixel]
-	int		SPP	   = 81;		 // Sample Per Pixel
+	int		SPP	   = 64;		 // Sample Per Pixel
 	int		MaxDepth = 12;		 // Allow long internal-reflection chains.
 	float	rusRoulette = 0.85f; // Russian Roulette for light bouncing
 	int		savefirstN = 2;		 // Keep first N camera ray(s) against Russian Roulette

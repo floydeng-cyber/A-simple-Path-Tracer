@@ -28,6 +28,7 @@ RenderStats Renderer::Render(
     using Clock = std::chrono::steady_clock; // Monotonic timer
 
     vectorRGB framebuffer(setting.width * setting.height); // Pixel colors
+    vectorRGB variance(setting.width * setting.height); // color variance (for nonlocal means filter)
     const float sampleWeight = 1.f / static_cast<float>(setting.SPP); // Weight of one sample
     std::cout << "SPP: " << setting.SPP << " | "
               << "Renderer: " << renderModeName(setting.renderMode)
@@ -57,8 +58,16 @@ RenderStats Renderer::Render(
                         (static_cast<float>(j) + XYdeviation.y) / setting.height;
                     const Ray primaryRay = camera.generateRay(normalizedX, normalizedY); // Create camera ray
 
-                    framebuffer[frameIndex] += integrator.radiance(
-                        primaryRay, scene, sampler, 0) * sampleWeight;
+                    Vector3f sampleColor = integrator.radiance(
+                        primaryRay, scene, sampler, 0);
+                    framebuffer[frameIndex] += sampleColor * sampleWeight;
+                    variance[frameIndex] += (sampleColor*sampleColor) * sampleWeight;
+                }
+                if (setting.SPP > 1) {
+                    variance[frameIndex] = Vector3f::Max(Vector3f(0.f),
+                      (variance[frameIndex] - framebuffer[frameIndex]*framebuffer[frameIndex]
+                          ) / float(setting.SPP-1)
+                    );
                 }
             }
             ++completedRows;
@@ -78,13 +87,16 @@ RenderStats Renderer::Render(
 
     for (std::thread& worker : threads)
         worker.join(); // Wait for all workers to finish
+
     UpdateProgress(1.f); // Show 100%
     std::cout << "\n";
     const auto integrationEnd = Clock::now(); // Stop integration timer
 
     const auto denoiseStart = Clock::now(); // start denosing
-    if (setting.denoiserOn)
-        Denoiser::apply(framebuffer, setting.height, setting.width);
+    if (setting.denoiserOn) {
+        std::cout << "denoising ...\n";
+        Denoiser::apply(framebuffer, variance, setting.height, setting.width);
+    }
     const auto denoiseEnd = Clock::now();   // end denosing
 
     const auto imageWriteStart = Clock::now(); // Start output timer
