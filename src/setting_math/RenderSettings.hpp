@@ -9,7 +9,6 @@ enum class RenderMode {
 	Hybrid,
 	Celluloid
 };
-
 inline const char* renderModeName(RenderMode mode) {
 	switch (mode) {
 	case RenderMode::PathTracing: return "path-tracing";
@@ -20,8 +19,19 @@ inline const char* renderModeName(RenderMode mode) {
 	return "unknown";
 }
 
+enum class DenoiserMode {
+	Bilateral,
+	NonlocalMeans
+};
+inline const char* denoiserModeName(DenoiserMode mode) {
+	switch (mode) {
+	case DenoiserMode::Bilateral: return "Bilateral";
+	case DenoiserMode::NonlocalMeans: return "Nonlocal-means";
+	}
+	return "unknown";
+}
+
 struct RenderSettings {
-	// Independent Setting Parameters
 	RenderMode renderMode = RenderMode::PathTracing;
 	int		width  = 500;		 // Image width  [pixel]
 	int		height = 500;		 // Image height [pixel]
@@ -32,7 +42,8 @@ struct RenderSettings {
 	int		threadCount = 0;	 // # of threads (default = 0 = hardware_concurrency)
 	float	fov = 40;			 // vertical field of view
 
-	bool denoiserOn = true;	// switch for denoiser
+	DenoiserMode denoiserMode = DenoiserMode::NonlocalMeans;
+	bool denoiserOn = false;	// switch for denoiser
 
 	std::string outputPath = std::string("assets/images/cornellBox_");
 	std::string outputFile = outputPath
@@ -44,6 +55,5 @@ struct RenderSettings {
 	float photonGatherRadius = 25.f;
 	int specularBothWayDepth = 4;
 
-	// Dependent Parameters
 	float AspectRatio = (float)width/height;	// Aspect Ratio
 };

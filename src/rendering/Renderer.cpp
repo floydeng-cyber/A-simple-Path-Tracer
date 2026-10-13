@@ -95,7 +95,7 @@ RenderStats Renderer::Render(
     const auto denoiseStart = Clock::now(); // start denosing
     if (setting.denoiserOn) {
         std::cout << "denoising ...\n";
-        Denoiser::apply(framebuffer, variance, setting.height, setting.width);
+        Denoiser::apply(framebuffer, variance, setting.height, setting.width, setting.denoiserMode);
     }
     const auto denoiseEnd = Clock::now();   // end denosing
 

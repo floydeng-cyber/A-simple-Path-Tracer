@@ -1,4 +1,4 @@
-#include "PathTracingIntegrator.hpp"
+﻿#include "PathTracingIntegrator.hpp"
 
 #include "RenderSettings.hpp"
 #include "Sampler.hpp"
