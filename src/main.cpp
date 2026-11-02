@@ -79,7 +79,11 @@ int main(int argc, char* argv[]) {
     scene.addObj<MeshTriangle>(
         "assets/models/complexSpheres.obj",
         &sphereMaterial,
-        MeshTriangleOptions{true, true}); // Two-sided mesh with smooth normals.
+        MeshTriangleOptions{true, true}); // Two-sided mesh with smooth normals
+    //scene.addObj<MeshTriangle>(
+    //    "assets/models/StanfordDragon.obj",
+    //    &sphereMaterial,
+    //    MeshTriangleOptions{ true, true }); // Two-sided mesh with smooth normals
 
     scene.addObj<MeshTriangle>("assets/models/cornellbox/floor.obj", &white);
     scene.addObj<MeshTriangle>("assets/models/cornellbox/left.obj", &red);

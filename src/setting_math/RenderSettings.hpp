@@ -32,7 +32,7 @@ inline const char* denoiserModeName(DenoiserMode mode) {
 }
 
 struct RenderSettings {
-	RenderMode renderMode = RenderMode::PathTracing;
+	RenderMode renderMode = RenderMode::Hybrid;
 	int		width  = 500;		 // Image width  [pixel]
 	int		height = 500;		 // Image height [pixel]
 	int		SPP	   = 64;		 // Sample Per Pixel
@@ -43,7 +43,7 @@ struct RenderSettings {
 	float	fov = 40;			 // vertical field of view
 
 	DenoiserMode denoiserMode = DenoiserMode::NonlocalMeans;
-	bool denoiserOn = false;	// switch for denoiser
+	bool denoiserOn = true;	// switch for denoiser
 
 	std::string outputPath = std::string("assets/images/cornellBox_");
 	std::string outputFile = outputPath

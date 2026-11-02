@@ -9,11 +9,11 @@
 class Denoiser {
 public:
     // denoiser settings
-    static constexpr int   Np = 4;     // neighorhood: Np x Np [pixel]
-    static constexpr float ks = 0.2f;  // spatial similarity factor (large ks rejects distant pixels more)
+    static constexpr int   Np = 4;     // neighborhood: Np x Np [pixel]
+    static constexpr float ks = 1.1f;  // spatial similarity factor (large ks rejects distant pixels more)
     static constexpr float kr = 1.f;   // color similarity factor (large kr rejects different colors more)
     static constexpr int   f = 3;      // path extend: (2f + 1) x (2f + 1)
-    static constexpr float kv = 1.f;   // refinement tunning constant
+    static constexpr float kv = 0.5f;  // refinement tunning constant
 
     using vectorRGB = std::vector<Vector3f>;
 
@@ -48,6 +48,8 @@ public:
 
                 for (std::thread& worker : threads)
                     worker.join(); // Wait for all workers to finish
+                UpdateProgress(1.f); // Show 100%
+                std::cout << "\n";
                 return framebuffer;
             }
             else if (mode == DenoiserMode::Bilateral) {
